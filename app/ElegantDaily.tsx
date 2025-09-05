@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -8,33 +9,24 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-/**
- * Modern, animated daily site for AI / Game reports
- * - Category segmented control (AI / Game)
- * - Month pill scroller
- * - Daily entries as animated cards
- * - Drawer detail view rendering Markdown (frontmatter stripped)
- * - Search, theme toggle, RSS export
- * - Zero backend: fetch("/manifest.json"). If missing, fall back to seedManifest.
- *
- * Data shape (manifest.json):
- * {
- *   site: { title: string, description?: string, baseUrl?: string },
- *   categories: { ai: "AI 日报", game: "游戏日报" },
- *   months: { [cat: string]: { ["YYYY-MM"]: Entry[] } }
- * }
- * type Entry = {
- *   date: "YYYY-MM-DD";
- *   title: string;
- *   summary?: string;
- *   tags?: string[];
- *   url?: string;      // optional external .md path like ai/2025/09/03.md
- *   content?: string;  // inline markdown (alternative to url)
- *   slug?: string;
- * };
- */
+/** ---------- Types ---------- */
+type Entry = {
+  date: string;            // "YYYY-MM-DD"
+  title: string;
+  summary?: string;
+  tags?: string[];
+  url?: string;            // e.g. "ai/2025/09/03.md"
+  content?: string;        // inline markdown (alternative to url)
+  slug?: string;
+};
+type Manifest = {
+  site: { title: string; description?: string; baseUrl?: string };
+  categories: Record<string, string>;
+  months: Record<string, Record<string, Entry[]>>; // months[cat][YYYY-MM] -> Entry[]
+};
 
-const seedManifest = {
+/** ---------- Seed manifest (fallback if /manifest.json missing) ---------- */
+const seedManifest: Manifest = {
   site: {
     title: "AI / 游戏 日报",
     description: "每天 10 分钟，跟上 AI 与游戏进展",
@@ -84,11 +76,11 @@ const seedManifest = {
   },
 };
 
-function classNames(...xs) {
+/** ---------- Utils ---------- */
+function classNames(...xs: Array<string | false | null | undefined>): string {
   return xs.filter(Boolean).join(" ");
 }
-
-function formatDate(iso) {
+function formatDate(iso?: string): string {
   if (!iso) return "";
   const d = new Date(`${iso}T00:00:00`);
   const y = d.getFullYear();
@@ -97,30 +89,29 @@ function formatDate(iso) {
   const weekday = "日一二三四五六"[d.getDay()];
   return `${y}-${m}-${dd}（周${weekday}）`;
 }
-
-function readingTime(md) {
+function readingTime(md?: string): number {
   const words = String(md || "")
     .replace(/[#>*`\-\[\]()]|\d+\.|\n/g, " ")
     .split(/\s+/)
     .filter(Boolean).length;
   return Math.max(1, Math.round(words / 260));
 }
-
-function stripFrontmatter(md = "") {
+function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
 }
 
+/** ---------- Component ---------- */
 export default function ElegantDaily() {
-  const [manifest, setManifest] = useState(seedManifest);
-  const [cat, setCat] = useState("ai");
-  const [month, setMonth] = useState("");
-  const [query, setQuery] = useState("");
-  const [detail, setDetail] = useState(null); // Entry | null
-  const [theme, setTheme] = useState(() =>
-    typeof window !== "undefined" && localStorage.getItem("theme")
-      ? localStorage.getItem("theme")
-      : "dark"
-  );
+  const [manifest, setManifest] = useState<Manifest>(seedManifest);
+  const [cat, setCat] = useState<"ai" | "game">("ai");
+  const [month, setMonth] = useState<string>("");
+  const [query, setQuery] = useState<string>("");
+  const [detail, setDetail] = useState<(Entry & { _md?: string }) | null>(null);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
+    return saved ?? "dark";
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -136,10 +127,10 @@ export default function ElegantDaily() {
           cache: "no-store",
         });
         if (res.ok) {
-          const j = await res.json();
+          const j: Partial<Manifest> = await res.json();
           if (!canceled) setManifest((m) => ({ ...m, ...j }));
         }
-      } catch (e) {
+      } catch (_e) {
         // keep seedManifest
       }
     })();
@@ -150,7 +141,7 @@ export default function ElegantDaily() {
   }, []);
 
   // Months for current category, sorted desc
-  const monthKeys = useMemo(() => {
+  const monthKeys = useMemo<string[]>(() => {
     const data = manifest.months?.[cat] || {};
     return Object.keys(data).sort().reverse();
   }, [manifest, cat]);
@@ -160,36 +151,32 @@ export default function ElegantDaily() {
     if (!month && monthKeys[0]) setMonth(monthKeys[0]);
   }, [month, monthKeys]);
 
-  const entries = useMemo(() => {
+  const entries = useMemo<Entry[]>(() => {
     const list = (manifest.months?.[cat]?.[month] || []).slice();
     list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     const q = (query || "").toLowerCase();
     if (!q) return list;
     return list.filter((p) =>
-      [p.title, p.summary, (p.tags || []).join(" ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
+      [p.title, p.summary, (p.tags || []).join(" ")].join(" ").toLowerCase().includes(q)
     );
   }, [manifest, cat, month, query]);
 
   const curCatLabel = manifest.categories?.[cat] || cat;
+  const monthScrollerRef = useRef<HTMLDivElement | null>(null);
 
-  const monthScrollerRef = useRef(null);
-
-  function scrollMonths(dir = 1) {
+  function scrollMonths(dir: number = 1) {
     const el = monthScrollerRef.current;
     if (!el) return;
     el.scrollBy({ left: dir * 240, behavior: "smooth" });
   }
 
-  async function openDetail(p) {
+  async function openDetail(p: Entry) {
     let md = p.content || "";
     if (!md && p.url) {
       try {
         const res = await fetch(p.url, { cache: "no-store" });
         md = await res.text();
-      } catch (e) {
+      } catch (_e) {
         md = "（加载 Markdown 失败）";
       }
     }
@@ -201,16 +188,18 @@ export default function ElegantDaily() {
     const items = (manifest.months?.[cat]?.[month] || [])
       .slice()
       .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-      .map((p) => `
+      .map(
+        (p) => `
         <item>
           <title><![CDATA[${p.title || ""}]]></title>
           <link>${location.origin + location.pathname}#/p/${cat}/${month}/${String(p.date).slice(-2)}</link>
           <guid>${p.slug || p.date}</guid>
           <pubDate>${new Date(p.date + "T00:00:00").toUTCString()}</pubDate>
           <description><![CDATA[${p.summary || ""}]]></description>
-        </item>`)
+        </item>`
+      )
       .join("\n");
-    const xml = `<?xml version="1.0" encoding="UTF-8" ?>\n<rss version=\"2.0\">\n  <channel>\n    <title><![CDATA[${curCatLabel} ${month}]]></title>\n    <link>${location.origin + location.pathname}</link>\n    <description><![CDATA[${manifest.site?.description || ""}]]></description>\n    <lastBuildDate>${now}</lastBuildDate>\n    ${items}\n  </channel>\n</rss>`;
+    const xml = `<?xml version="1.0" encoding="UTF-8" ?>\n<rss version="2.0">\n  <channel>\n    <title><![CDATA[${curCatLabel} ${month}]]></title>\n    <link>${location.origin + location.pathname}</link>\n    <description><![CDATA[${manifest.site?.description || ""}]]></description>\n    <lastBuildDate>${now}</lastBuildDate>\n    ${items}\n  </channel>\n</rss>`;
     const blob = new Blob([xml], { type: "application/rss+xml;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -237,7 +226,7 @@ export default function ElegantDaily() {
             <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-teal-500 shadow-lg shadow-violet-800/20">
               <Sparkles className="h-5 w-5" />
             </div>
-            <div className="">
+            <div>
               <div className="text-sm uppercase tracking-widest text-slate-300">Daily • {manifest.categories?.[cat]}</div>
               <div className="-mt-0.5 font-semibold">{manifest.site?.title}</div>
             </div>
@@ -275,7 +264,7 @@ export default function ElegantDaily() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Category segmented control */}
             <div className="relative isolate inline-flex rounded-full bg-slate-950/40 p-1 ring-1 ring-white/10">
-              {(["ai", "game"]).map((k) => (
+              {(["ai", "game"] as const).map((k) => (
                 <button
                   key={k}
                   onClick={() => {
@@ -297,13 +286,13 @@ export default function ElegantDaily() {
                 </button>
               ))}
               {/* active pill */}
-<motion.span
-  aria-hidden
-  className="absolute inset-y-1 left-1 z-0 w-[calc(50%-0.25rem)] rounded-full bg-gradient-to-tr from-violet-400 to-teal-300 shadow-inner"
-  animate={{ x: cat === 'ai' ? '0%' : '100%' }}
-  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-/>
-</div>
+              <motion.span
+                aria-hidden
+                className="absolute inset-y-1 left-1 z-0 w-[calc(50%-0.25rem)] rounded-full bg-gradient-to-tr from-violet-400 to-teal-300 shadow-inner"
+                animate={{ x: cat === "ai" ? "0%" : "100%" }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            </div>
 
             {/* Search */}
             <div className="relative w-full sm:max-w-md">
@@ -357,11 +346,7 @@ export default function ElegantDaily() {
               本月暂无数据或被搜索过滤。
             </motion.div>
           ) : (
-            <motion.div
-              key="grid"
-              layout
-              className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
-            >
+            <motion.div key="grid" layout className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               {entries.map((p) => (
                 <motion.article
                   key={p.date + p.title}
@@ -384,17 +369,12 @@ export default function ElegantDaily() {
                     <span>{readingTime(p.content) || 1} 分钟</span>
                   </div>
 
-                  <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-50">
-                    {p.title}
-                  </h3>
+                  <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-50">{p.title}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-300/90">{p.summary}</p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(p.tags || []).map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300"
-                      >
+                      <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300">
                         # {t}
                       </span>
                     ))}
@@ -448,17 +428,19 @@ export default function ElegantDaily() {
                 </button>
               </div>
 
-              <div className="mx-auto w-full max-w-3xl px-5 py-6">
-                <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-50">
-                  {detail.title}
-                </h1>
+              <div className="mx-auto w/full max-w-3xl px-5 py-6">
+                <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-50">{detail.title}</h1>
                 <div className="mb-4 flex flex-wrap gap-2">
                   {(detail.tags || []).map((t) => (
-                    <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300"># {t}</span>
+                    <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300">
+                      # {t}
+                    </span>
                   ))}
                 </div>
                 <article className="prose prose-invert prose-slate max-w-none prose-pre:rounded-xl prose-pre:bg-slate-900/70 prose-code:text-teal-300">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{detail._md || "（暂无内容）"}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {detail._md || "（暂无内容）"}
+                  </ReactMarkdown>
                 </article>
               </div>
             </motion.aside>
