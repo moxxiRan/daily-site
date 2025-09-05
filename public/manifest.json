@@ -1,0 +1,13 @@
+{
+  "site": { "title": "AI / 游戏 日报", "description": "每天 10 分钟，跟上进展", "baseUrl": "/daily-site" },
+  "categories": { "ai": "AI 日报", "game": "游戏日报" },
+  "months": {
+    "ai": { "2025-09": [
+      { "date": "2025-09-03", "title": "AI 日报 · 2025-09-03", "summary": "…", "tags": ["AI","Daily"], "url": "ai/2025/09/03.md" }
+    ]},
+    "game": { "2025-09": [
+      { "date": "2025-09-03", "title": "游戏日报 · 2025-09-03", "summary": "…", "tags": ["Game"], "url": "game/2025/09/03.md" }
+    ]}
+  }
+}
+
