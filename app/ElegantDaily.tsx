@@ -100,6 +100,11 @@ function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
 }
 
+function detectBase(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.pathname.startsWith("/daily-site") ? "/daily-site" : "";
+}
+
 /** ---------- Component ---------- */
 export default function ElegantDaily() {
   const [manifest, setManifest] = useState<Manifest>(seedManifest);
@@ -123,12 +128,14 @@ export default function ElegantDaily() {
     let canceled = false;
     (async () => {
       try {
-        const res = await fetch(`${manifest.site?.baseUrl || ""}/manifest.json`, {
+        const base = manifest.site?.baseUrl || detectBase();
+        const res = await fetch(`${base}/manifest.json`, {
           cache: "no-store",
         });
         if (res.ok) {
           const j: Partial<Manifest> = await res.json();
-          if (!canceled) setManifest((m) => ({ ...m, ...j }));
+          if (!canceled)
+            setManifest((m) => ({ ...m, ...j, site: { ...m.site, ...j.site, baseUrl: base } }));
         }
       } catch (_e) {
         // keep seedManifest
