@@ -123,7 +123,9 @@ export default function ElegantDaily() {
     let canceled = false;
     (async () => {
       try {
-        const res = await fetch(`${manifest.site?.baseUrl || ""}/manifest.json`, {
+        // === 主要修改点 ===
+        // 使用相对路径 `./manifest.json`，确保在任何部署路径下都能正确访问
+        const res = await fetch(`./manifest.json`, {
           cache: "no-store",
         });
         if (res.ok) {
@@ -132,6 +134,7 @@ export default function ElegantDaily() {
         }
       } catch (_e) {
         // keep seedManifest
+        console.error("Failed to load manifest.json:", _e);
       }
     })();
     return () => {
@@ -174,6 +177,7 @@ export default function ElegantDaily() {
     let md = p.content || "";
     if (!md && p.url) {
       try {
+        // p.url已经是相对路径 'ai/2024/01/01.md'，浏览器会自动处理
         const res = await fetch(p.url, { cache: "no-store" });
         md = await res.text();
       } catch (_e) {

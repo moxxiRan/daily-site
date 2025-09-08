@@ -1,4 +1,4 @@
-# dify_publisher.py (v12 - 修复根目录 manifest 写入；双写根+public；时区兜底；多形态解析；支持 chunked)
+# dify_publisher.py (v13 - 增强 manifest 初始化逻辑)
 # 本地 HTTP 服务：接收 Dify Webhook，分类归档 Markdown 到 GitHub Pages 仓库，并更新 manifest.json 后 push
 
 import http.server
@@ -30,6 +30,24 @@ try:
 except Exception:
     CN_TZ = timezone(timedelta(hours=8), name="Asia/Shanghai")
     TZ_LABEL = "FixedOffset(+08:00)"
+
+# ===== 新增：manifest 默认模板 =====
+# 当 manifest.json 不存在时，使用此完整结构创建
+DEFAULT_MANIFEST = {
+  "site": {
+    "title": "AI / 游戏 日报",
+    "description": "每天 10 分钟，跟上 AI 与游戏进展",
+    "baseUrl": ""
+  },
+  "categories": {
+    "ai": "AI 日报",
+    "game": "游戏日报"
+  },
+  "months": {
+    "ai": {},
+    "game": {}
+  }
+}
 
 
 # ===== 分类规则 =====
@@ -66,19 +84,25 @@ def atomic_write(path: str, data: str):
     shutil.move(tmp_path, path)
 
 
-# ===== manifest 初始化 & 覆盖逻辑 =====
+# ===== manifest 初始化 & 覆盖逻辑 (已优化) =====
 def load_or_init_manifest(manifest_path: str) -> dict:
     if not os.path.exists(manifest_path):
-        return {"months": {"ai": {}, "game": {}}}
+        # 如果文件不存在，返回完整的默认结构
+        print(f"ℹ️ manifest.json 不存在于 {manifest_path}，将使用默认模板创建。")
+        return DEFAULT_MANIFEST.copy()
     try:
         with open(manifest_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-    except Exception:
-        return {"months": {"ai": {}, "game": {}}}
-    data.setdefault("months", {})
-    data["months"].setdefault("ai", {})
-    data["months"].setdefault("game", {})
-    return data
+        # 确保关键键存在，保持健壮性
+        data.setdefault("site", DEFAULT_MANIFEST["site"])
+        data.setdefault("categories", DEFAULT_MANIFEST["categories"])
+        data.setdefault("months", {"ai": {}, "game": {}})
+        data["months"].setdefault("ai", {})
+        data["months"].setdefault("game", {})
+        return data
+    except Exception as e:
+        print(f"⚠️ 读取 manifest.json 失败 ({e})，将使用默认模板。")
+        return DEFAULT_MANIFEST.copy()
 
 
 def upsert_manifest(manifest: dict, category: str, yyyy: str, mm: str, dd: str, title: str, summary: str):
@@ -280,7 +304,7 @@ class WebhookHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"--- Dify Publisher (v12) ---  Using TZ: {TZ_LABEL}")
+    print(f"--- Dify Publisher (v13) ---  Using TZ: {TZ_LABEL}")
     print(f"Listening: http://127.0.0.1:{PORT}/webhook")
     print(f"Set Dify Webhook URL to: http://host.docker.internal:{PORT}/webhook")
     with socketserver.TCPServer(("", PORT), WebhookHandler) as httpd:
