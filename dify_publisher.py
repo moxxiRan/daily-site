@@ -41,39 +41,87 @@ DEFAULT_MANIFEST = {
 # ===== 核心改动：v15 强化版 Markdown 格式化函数 =====
 def format_markdown_spacing(md: str) -> str:
     """
-    智能修复 Dify 生成的 Markdown，确保所有块级元素间有标准空行，以兼容严格的 CommonMark 解析器。
-    - 替换所有 CRLF (\r\n) 为 LF (\n) 以统一处理。
-    - 在标题(#)、引用(>)、列表(-,*)、水平线(---) 等块级元素的后面，如果下一行不是空行，则强制插入一个空行。
+    强化 Markdown 规范化（兼容 GitHub/GFM 与 react-markdown）：
+    - 统一换行，去零宽/BOM
+    - 不在```代码块```内部做任何改动
+    - 块级元素（# 标题、> 引用、列表项、水平线）后，若下一行是紧贴的正文，则自动补一空行
+    - 列表“开始前”若上一行是正文，也自动补一空行（含有序列表 1. / 1) / 1、）
     """
     if not md:
         return ""
-    
-    # 统一换行符
-    lines = md.replace('\r\n', '\n').split('\n')
-    
-    formatted_lines = []
-    for i, line in enumerate(lines):
-        formatted_lines.append(line)
-        
-        # 检查当前行是否是块级元素的结束，并且不是最后一行，且下一行不是空行
-        is_block_end = (
-            line.strip().startswith(('#', '>', '---', '***', '___')) or
-            (line.strip().startswith(('-', '*', '+')) and ' ' in line.strip()) # 列表项
-        )
-        
-        if (i < len(lines) - 1) and is_block_end:
-            next_line = lines[i+1].strip()
-            if next_line: # 如果下一行不是空的
-                # 检查下一行是否是连续的相同块级元素（如连续的引用或列表项）
-                is_continuous_block = (
-                    (line.strip().startswith('>') and next_line.startswith('>')) or
-                    (line.strip()[0] in '-*+' and next_line.startswith(line.strip()[0]))
-                )
-                if not is_continuous_block:
-                    formatted_lines.append("") # 插入空行
-    
-    return '\n'.join(formatted_lines)
 
+    md = md.replace("\r\n", "\n").replace("\ufeff", "")
+    lines = md.split("\n")
+
+    out = []
+    in_code = False
+
+    def is_unordered_list(s: str) -> bool:
+        return bool(re.match(r'^\s*[-*+]\s+', s))
+
+    def is_ordered_list(s: str) -> bool:
+        return bool(re.match(r'^\s*\d+\s*[.)、]\s+', s))
+
+    def is_list(s: str) -> bool:
+        return is_unordered_list(s) or is_ordered_list(s)
+
+    def is_heading(s: str) -> bool:
+        return bool(re.match(r'^\s*#{1,6}\s+', s))
+
+    def is_blockquote(s: str) -> bool:
+        return bool(re.match(r'^\s*>', s))
+
+    def is_hr(s: str) -> bool:
+        return bool(re.match(r'^\s*(?:-{3,}|\*{3,}|_{3,})\s*$', s))
+
+    i = 0
+    prev_line_out = ""  # out 中上一行（已写入的）
+
+    while i < len(lines):
+        line = lines[i]
+
+        # 代码围栏：只切状态，不改内容
+        if re.match(r'^\s*```', line):
+            in_code = not in_code
+            out.append(line)
+            prev_line_out = line
+            i += 1
+            continue
+
+        if in_code:
+            out.append(line)
+            prev_line_out = line
+            i += 1
+            continue
+
+        # 1) 列表开始前的空行（上一行是正文/非块级）
+        if is_list(line) and prev_line_out.strip() and not (
+            is_list(prev_line_out) or is_blockquote(prev_line_out) or
+            is_heading(prev_line_out) or is_hr(prev_line_out)
+        ):
+            out.append("")  # 在列表前补空行
+
+        out.append(line)
+
+        # 2) 块级元素“之后”的空行：下一行若是紧贴的正文，则补空行
+        if i < len(lines) - 1:
+            nxt = lines[i + 1]
+            if (is_heading(line) or is_blockquote(line) or is_list(line) or is_hr(line)):
+                # 同类连续块（连续 > 引用、连续列表项）不补空行
+                same_block_continuation = (
+                    (is_blockquote(line) and is_blockquote(nxt)) or
+                    (is_list(line) and is_list(nxt))
+                )
+                if nxt.strip() and not same_block_continuation:
+                    out.append("")
+
+        prev_line_out = out[-1] if out else ""
+        i += 1
+
+    # 末尾统一补一个换行（可选，方便 git diff）
+    if out and out[-1] != "":
+        out.append("")
+    return "\n".join(out)
 
 # ===== 分类规则 =====
 def classify(content: str) -> str:
