@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 /** ---------- Types ---------- */
 type Entry = {
@@ -15,69 +16,18 @@ type Entry = {
   title: string;
   summary?: string;
   tags?: string[];
-  url?: string;            // e.g. "ai/2025/09/03.md"
-  content?: string;        // inline markdown (alternative to url)
-  slug?: string;
+  url?: string;            // 相对路径 md 文件，如 "game/2025/09/08.md"
+  content?: string;        // 也可直接内联 md
+  _md?: string;            // 运行期解析后的 md 文本
 };
 type Manifest = {
-  site: { title: string; description?: string; baseUrl?: string };
+  title: string;
   categories: Record<string, string>;
-  months: Record<string, Record<string, Entry[]>>; // months[cat][YYYY-MM] -> Entry[]
-};
-
-/** ---------- Seed manifest (fallback if /manifest.json missing) ---------- */
-const seedManifest: Manifest = {
-  site: {
-    title: "AI / 游戏 日报",
-    description: "每天 10 分钟，跟上 AI 与游戏进展",
-    baseUrl: "",
-  },
-  categories: { ai: "AI 日报", game: "游戏日报" },
-  months: {
-    ai: {
-      "2025-09": [
-        {
-          date: "2025-09-03",
-          title: "AI 日报 · 2025-09-03",
-          summary: "模型/产品/论文要闻 10 条。",
-          tags: ["AI", "Daily"],
-          content:
-            "## 今日要闻\n1. ……\n2. ……\n\n### 简评\n- 节奏趋于周更，注意评测口径统一。",
-        },
-        {
-          date: "2025-09-02",
-          title: "AI 日报 · 2025-09-02",
-          summary: "监管与开源动态。",
-          tags: ["AI"],
-          content: "## 速读\n- ……",
-        },
-      ],
-      "2025-08": [
-        {
-          date: "2025-08-31",
-          title: "AI 日报 · 2025-08-31",
-          summary: "月末观察：推理成本与评测基线。",
-          tags: ["AI"],
-          content: "…",
-        },
-      ],
-    },
-    game: {
-      "2025-09": [
-        {
-          date: "2025-09-03",
-          title: "游戏日报 · 2025-09-03",
-          summary: "新品、买量、版本更新与节点观察。",
-          tags: ["Game", "Daily"],
-          content: "## 今日焦点\n- ……",
-        },
-      ],
-    },
-  },
+  months: Record<string, Record<string, Entry[]>>;
 };
 
 /** ---------- Utils ---------- */
-function classNames(...xs: Array<string | false | null | undefined>): string {
+function cx(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
 function formatDate(iso?: string): string {
@@ -100,61 +50,92 @@ function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
 }
 
+function normalizeMarkdown(md: string = ""): string {
+  return (md || "")
+    .replace(/\uFEFF/g, "")      // 去 BOM/零宽
+    .replace(/\r\n/g, "\n")      // 统一换行
+    // 引用后若下一行不是 '>' 或空行，补一行空行，避免 lazy continuation
+    .replace(/(^>.*\n)(?!>|\n)/gm, "$1\n")
+    // 段落/标题/引用 之后若直接开始列表，则补空行，确保识别列表
+    .replace(/([^\n>])\n(- |\* |\d+[.)、] )/g, "$1\n\n$2");
+}
+
 /** ---------- Component ---------- */
 export default function ElegantDaily() {
-  const [manifest, setManifest] = useState<Manifest>(seedManifest);
-  const [cat, setCat] = useState<"ai" | "game">("ai");
+  const [manifest, setManifest] = useState<Manifest>({
+    title: "每日精选",
+    categories: { ai: "AI", game: "Game" },
+    months: {},
+  });
+  const [cat, setCat] = useState<keyof Manifest["months"]>("game");
   const [month, setMonth] = useState<string>("");
   const [query, setQuery] = useState<string>("");
-  const [detail, setDetail] = useState<(Entry & { _md?: string }) | null>(null);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
-    return saved ?? "dark";
-  });
+  const [detail, setDetail] = useState<Entry | null>(null);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
+  // 主题切换（简单示例）
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    if (typeof window !== "undefined") localStorage.setItem("theme", theme);
+    if (theme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
   }, [theme]);
 
-  // Load external manifest.json if exists
+  // 拉取 manifest（优先根目录 ./manifest.json）
   useEffect(() => {
-    let canceled = false;
-    (async () => {
+    async function load() {
       try {
-        // === 主要修改点 ===
-        // 使用相对路径 `./manifest.json`，确保在任何部署路径下都能正确访问
-        const res = await fetch(`./manifest.json`, {
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const j: Partial<Manifest> = await res.json();
-          if (!canceled) setManifest((m) => ({ ...m, ...j }));
-        }
+        const res = await fetch("./manifest.json", { cache: "no-store" });
+        const m = (await res.json()) as Manifest;
+        setManifest(m);
+        // 默认选第一个有内容的分类+最近月份
+        const firstCat = Object.keys(m.months)[0] as keyof Manifest["months"];
+        setCat(firstCat || "game");
+        const months = Object.keys(m.months[firstCat] || {}).sort().reverse();
+        setMonth(months[0] || "");
       } catch (_e) {
-        // keep seedManifest
-        console.error("Failed to load manifest.json:", _e);
+        // 兜底：内置一些示例数据（如果 manifest 拉失败）
+        setManifest({
+          title: "每日精选",
+          categories: { ai: "AI", game: "Game" },
+          months: {
+            ai: {
+              "2025-08": [
+                {
+                  date: "2025-08-31",
+                  title: "AI 日报 · 2025-08-31",
+                  summary: "月末观察：推理成本与评测基线。",
+                  tags: ["AI"],
+                  content: "…",
+                },
+              ],
+            },
+            game: {
+              "2025-09": [
+                {
+                  date: "2025-09-03",
+                  title: "游戏日报 · 2025-09-03",
+                  summary: "新品、买量、版本更新与节点观察。",
+                  tags: ["Game", "Daily"],
+                  content: "…",
+                },
+              ],
+            },
+          },
+        });
+        setCat("game");
+        setMonth("2025-09");
       }
-    })();
-    return () => {
-      canceled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
+    load();
   }, []);
 
-  // Months for current category, sorted desc
-  const monthKeys = useMemo<string[]>(() => {
-    const data = manifest.months?.[cat] || {};
-    return Object.keys(data).sort().reverse();
+  // 月份列表
+  const months = useMemo(() => {
+    const mm = Object.keys(manifest.months?.[cat] || {});
+    return mm.sort().reverse();
   }, [manifest, cat]);
 
-  // Default month = latest
-  useEffect(() => {
-    if (!month && monthKeys[0]) setMonth(monthKeys[0]);
-  }, [month, monthKeys]);
-
-  const entries = useMemo<Entry[]>(() => {
+  // 当前月份的条目（倒序，支持搜索）
+  const entries = useMemo(() => {
     const list = (manifest.months?.[cat]?.[month] || []).slice();
     list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     const q = (query || "").toLowerCase();
@@ -184,7 +165,7 @@ export default function ElegantDaily() {
         md = "（加载 Markdown 失败）";
       }
     }
-    setDetail({ ...p, _md: stripFrontmatter(md) });
+    setDetail({ ...p, _md: normalizeMarkdown(stripFrontmatter(md)) });
   }
 
   function exportRSS() {
@@ -194,245 +175,247 @@ export default function ElegantDaily() {
       .sort((a, b) => String(b.date).localeCompare(String(a.date)))
       .map(
         (p) => `
-        <item>
-          <title><![CDATA[${p.title || ""}]]></title>
-          <link>${location.origin + location.pathname}#/p/${cat}/${month}/${String(p.date).slice(-2)}</link>
-          <guid>${p.slug || p.date}</guid>
-          <pubDate>${new Date(p.date + "T00:00:00").toUTCString()}</pubDate>
-          <description><![CDATA[${p.summary || ""}]]></description>
-        </item>`
+<item>
+  <title>${p.title}</title>
+  <link>${location.href.split("#")[0]}</link>
+  <pubDate>${new Date(`${p.date}T00:00:00`).toUTCString()}</pubDate>
+  <description><![CDATA[${p.summary || ""}]]></description>
+</item>`
       )
       .join("\n");
-    const xml = `<?xml version="1.0" encoding="UTF-8" ?>\n<rss version="2.0">\n  <channel>\n    <title><![CDATA[${curCatLabel} ${month}]]></title>\n    <link>${location.origin + location.pathname}</link>\n    <description><![CDATA[${manifest.site?.description || ""}]]></description>\n    <lastBuildDate>${now}</lastBuildDate>\n    ${items}\n  </channel>\n</rss>`;
-    const blob = new Blob([xml], { type: "application/rss+xml;charset=utf-8" });
+
+    const rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>${manifest.title} · ${curCatLabel} · ${month}</title>
+  <link>${location.href.split("#")[0]}</link>
+  <description>导出自 daily-site</description>
+  <lastBuildDate>${now}</lastBuildDate>
+  ${items}
+</channel>
+</rss>`;
+
+    const blob = new Blob([rss], { type: "application/rss+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${cat}-${month}-rss.xml`;
+    a.href = url;
+    a.download = `daily-${cat}-${month}.xml`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    URL.revokeObjectURL(url);
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 dark:text-slate-100">
-      {/* background orbs */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-[480px] w-[480px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-violet-600/30 to-teal-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -left-20 h-[420px] w-[420px] rotate-12 rounded-full bg-gradient-to-tr from-fuchsia-500/20 to-indigo-500/10 blur-3xl" />
-
+    <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* header */}
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-slate-900/50 border-b border-white/10"
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <div className="group flex cursor-pointer items-center gap-3" onClick={() => setDetail(null)}>
-            <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-teal-500 shadow-lg shadow-violet-800/20">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-sm uppercase tracking-widest text-slate-300">Daily • {manifest.categories?.[cat]}</div>
-              <div className="-mt-0.5 font-semibold">{manifest.site?.title}</div>
-            </div>
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+          <span className="text-2xl">🎮</span>
+          <h1 className="mr-auto text-xl font-bold tracking-tight">
+            {manifest.title} · {formatDate(month + "-01")}
+          </h1>
+
+          <div className="hidden items-center gap-1 sm:flex">
+            {Object.entries(manifest.categories || {}).map(([k, v]) => (
+              <button
+                key={k}
+                onClick={() => setCat(k as any)}
+                className={cx(
+                  "rounded-full px-3 py-1 text-sm",
+                  cat === k ? "bg-white/15 text-white" : "text-slate-300 hover:bg-white/10"
+                )}
+              >
+                # {v}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>主题</span>
-            </button>
-            <button onClick={exportRSS} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">
-              <Rss className="h-4 w-4" /> RSS
-            </button>
-            <a
-              href="https://github.com/"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-            >
-              <Github className="h-4 w-4" /> GitHub
-            </a>
+
+          <div className="relative ml-2 hidden md:block">
+            <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              className="w-64 rounded-lg border border-white/10 bg-slate-900 px-7 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40"
+              placeholder="搜索标题/摘要/标签…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
+
+          <button
+            className="ml-2 hidden rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 md:block"
+            onClick={exportRSS}
+            title="导出当前分类&月份 RSS"
+          >
+            <Rss className="mr-1 inline h-4 w-4" />
+            RSS
+          </button>
+
+          <a
+            className="ml-2 hidden rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 md:block"
+            href="https://github.com/moxxiran/daily-site"
+            target="_blank"
+            rel="noreferrer"
+            title="GitHub"
+          >
+            <Github className="mr-1 inline h-4 w-4" />
+            GitHub
+          </a>
+
+          <button
+            className="ml-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
+            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            title="切换主题"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </div>
-      </motion.header>
 
-      {/* hero */}
-      <section className="mx-auto max-w-6xl px-4 pb-2 pt-8">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl"
-        >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Category segmented control */}
-            <div className="relative isolate inline-flex rounded-full bg-slate-950/40 p-1 ring-1 ring-white/10">
-              {(["ai", "game"] as const).map((k) => (
+        {/* months scroller */}
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2">
+            <button
+              onClick={() => scrollMonths(-1)}
+              className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10"
+              title="向左"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <div
+              ref={monthScrollerRef}
+              className="no-scrollbar -mx-1 flex flex-1 snap-x snap-mandatory gap-2 overflow-x-auto px-1"
+            >
+              {months.map((m) => (
                 <button
-                  key={k}
-                  onClick={() => {
-                    setCat(k);
-                    // switch to latest month of that cat
-                    const months = Object.keys(manifest.months?.[k] || {}).sort().reverse();
-                    if (months[0]) setMonth(months[0]);
-                    setDetail(null);
-                  }}
-                  className={classNames(
-                    "relative z-10 px-4 py-2 text-sm font-medium transition",
-                    cat === k ? "text-slate-900" : "text-slate-300"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    {k === "ai" ? <Newspaper className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
-                    {manifest.categories?.[k]}
-                  </span>
-                </button>
-              ))}
-              {/* active pill */}
-              <motion.span
-                aria-hidden
-                className="absolute inset-y-1 left-1 z-0 w-[calc(50%-0.25rem)] rounded-full bg-gradient-to-tr from-violet-400 to-teal-300 shadow-inner"
-                animate={{ x: cat === "ai" ? "0%" : "100%" }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            </div>
-
-            {/* Search */}
-            <div className="relative w-full sm:max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="搜索标题/标签/摘要…"
-                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 py-2 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-400 shadow-inner outline-none ring-1 ring-transparent focus:border-white/20 focus:ring-white/10"
-              />
-            </div>
-          </div>
-
-          {/* month scroller */}
-          <div className="mt-4 flex items-center gap-2">
-            <button onClick={() => scrollMonths(-1)} className="rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"><ChevronLeft className="h-4 w-4" /></button>
-            <div ref={monthScrollerRef} className="flex w-full snap-x snap-mandatory gap-2 overflow-x-auto pb-2">
-              {monthKeys.map((m) => (
-                <motion.button
                   key={m}
                   onClick={() => setMonth(m)}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={classNames(
-                    "snap-start rounded-2xl border px-4 py-2 text-sm",
-                    m === month
-                      ? "border-violet-400/40 bg-gradient-to-tr from-violet-500/20 to-teal-400/10 text-slate-50"
-                      : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                  className={cx(
+                    "snap-start rounded-lg border px-3 py-2 text-sm",
+                    "border-white/10 text-slate-300 hover:bg-white/10",
+                    month === m && "bg-white/15 text-white"
                   )}
                 >
+                  <Calendar className="mr-1 inline h-4 w-4" />
                   {m}
-                </motion.button>
+                </button>
               ))}
             </div>
-            <button onClick={() => scrollMonths(1)} className="rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"><ChevronRight className="h-4 w-4" /></button>
-          </div>
-        </motion.div>
-      </section>
 
-      {/* list */}
-      <section className="mx-auto max-w-6xl px-4 pb-10">
-        <AnimatePresence mode="popLayout">
-          {entries.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="mt-6 grid place-items-center rounded-3xl border border-white/10 bg-white/5 p-12 text-slate-300"
+            <button
+              onClick={() => scrollMonths(1)}
+              className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10"
+              title="向右"
             >
-              本月暂无数据或被搜索过滤。
-            </motion.div>
-          ) : (
-            <motion.div key="grid" layout className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {entries.map((p) => (
-                <motion.article
-                  key={p.date + p.title}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ y: -2 }}
-                  transition={{ duration: 0.25 }}
-                  className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/60 to-slate-950/60 p-5 shadow-xl"
-                >
-                  {/* card glow */}
-                  <div className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden>
-                    <div className="absolute -inset-px rounded-[22px] bg-gradient-to-r from-violet-500/30 via-teal-400/20 to-fuchsia-400/20 blur-xl" />
-                  </div>
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </header>
 
-                  <div className="mb-2 flex items-center gap-2 text-xs text-slate-300/80">
-                    <Calendar className="h-4 w-4" />
-                    <span className="font-medium tabular-nums">{formatDate(p.date)}</span>
-                    <span>·</span>
-                    <span>{readingTime(p.content) || 1} 分钟</span>
-                  </div>
+      {/* content */}
+      <main className="mx-auto max-w-6xl px-4 py-6">
+        {entries.length === 0 ? (
+          <div className="rounded-xl border border-white/10 bg-slate-900/50 p-8 text-center text-slate-400">
+            暂无内容
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {entries.map((p) => (
+              <article
+                key={`${p.date}-${p.title}`}
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-5 hover:border-white/20"
+              >
+                <div className="mb-2 flex items-center gap-2 text-xs text-slate-400">
+                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5">
+                    <Newspaper className="mr-1 h-3 w-3" />
+                    {curCatLabel}
+                  </span>
+                  <span>{formatDate(p.date)}</span>
+                  <span>·</span>
+                  <span>{readingTime(p.content || p.url ? "500" : p.summary) || 1} 分钟</span>
+                </div>
 
-                  <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-50">{p.title}</h3>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-300/90">{p.summary}</p>
+                <h3 className="mb-1 line-clamp-1 text-lg font-semibold tracking-tight">
+                  {p.title}
+                </h3>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
+                {!!(p.tags || []).length && (
+                  <div className="mb-2 flex flex-wrap gap-2">
                     {(p.tags || []).map((t) => (
-                      <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300">
+                      <span
+                        key={t}
+                        className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300"
+                      >
                         # {t}
                       </span>
                     ))}
                   </div>
+                )}
 
-                  <div className="mt-4 flex items-center justify-end">
-                    <motion.button
-                      onClick={() => openDetail(p)}
-                      whileTap={{ scale: 0.98 }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-medium text-slate-50 backdrop-blur hover:bg-white/20"
+                {!!p.summary && (
+                  <p className="line-clamp-3 text-sm text-slate-300/90">{p.summary}</p>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    onClick={() => openDetail(p)}
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10"
+                  >
+                    查看详情
+                  </button>
+                  {!!p.url && (
+                    <a
+                      href={p.url}
+                      className="text-sm text-teal-300 hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
                     >
-                      阅读全文 <ChevronRight className="h-4 w-4" />
-                    </motion.button>
-                  </div>
-                </motion.article>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
+                      查看原文 MD
+                    </a>
+                  )}
+                </div>
 
-      {/* Drawer Detail */}
+                {/* 背景装饰 */}
+                <Sparkles className="absolute -right-8 -top-6 h-24 w-24 text-white/5 transition-transform group-hover:rotate-12" />
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* detail drawer */}
       <AnimatePresence>
         {detail && (
           <motion.div
+            className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 p-2 sm:items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setDetail(null)}
           >
-            <motion.aside
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 260, damping: 30 }}
-              className="absolute right-0 top-0 h-full w-full overflow-y-auto border-l border-white/10 bg-slate-950/95 shadow-2xl sm:w-[640px]"
+            <motion.div
+              className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-950"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 22, stiffness: 220 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-white/10 bg-slate-950/70 px-5 py-3 backdrop-blur">
-                <div className="flex items-center gap-2 text-xs text-slate-300/90">
-                  <Calendar className="h-4 w-4" />
-                  <span className="tabular-nums">{formatDate(detail.date)}</span>
-                  <span>· {readingTime(detail._md)} 分钟</span>
+              <div className="border-b border-white/10 px-5 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-slate-200">
+                    <span className="mr-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs">
+                      <Newspaper className="mr-1 h-3 w-3" />
+                      {curCatLabel}
+                    </span>
+                    <span>{formatDate(detail.date)}</span>
+                  </div>
+                  <button
+                    onClick={() => setDetail(null)}
+                    className="rounded-lg border border-white/10 px-2 py-1 text-slate-300 hover:bg-white/10"
+                    aria-label="关闭"
+                  >
+                    关闭
+                  </button>
                 </div>
-                <button
-                  onClick={() => setDetail(null)}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
-                >
-                  关闭
-                </button>
-              </div>
-
-              <div className="mx-auto w/full max-w-3xl px-5 py-6">
                 <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-50">{detail.title}</h1>
                 <div className="mb-4 flex flex-wrap gap-2">
                   {(detail.tags || []).map((t) => (
@@ -441,13 +424,13 @@ export default function ElegantDaily() {
                     </span>
                   ))}
                 </div>
-                <article className="prose prose-invert prose-slate max-w-none prose-pre:rounded-xl prose-pre:bg-slate-900/70 prose-code:text-teal-300">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <article className="prose prose-invert prose-slate max-w-none prose-headings:font-semibold prose-a:text-teal-300 prose-strong:text-slate-100 prose-blockquote:border-l-teal-400/50 prose-img:rounded-xl prose-pre:bg-slate-900/70 prose-code:text-teal-300">
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                     {detail._md || "（暂无内容）"}
                   </ReactMarkdown>
                 </article>
               </div>
-            </motion.aside>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
