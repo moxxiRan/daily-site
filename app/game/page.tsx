@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Entry = { date: string; title: string; url: string; summary?: string; tags?: string[] };
 type MonthsByCategory = Record<string, Entry[]>;
@@ -19,18 +19,20 @@ function detectBase() {
 export default function GameDailyPage() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const base = useMemo(() => detectBase(), []);
+  const [base, setBase] = useState('');
 
   useEffect(() => {
     // 先按环境猜测 base，去取 manifest.json
-    fetch(`${base}/manifest.json`, { cache: 'no-store' })
+    const b = detectBase();
+    setBase(b);
+    fetch(`${b}/manifest.json`, { cache: 'no-store' })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data: Manifest) => setManifest(data))
       .catch((e) => setError(`读取 manifest 失败：${String(e)}`));
-  }, [base]);
+  }, []);
 
   if (error) {
     return <main className="p-6">
