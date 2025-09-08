@@ -1,4 +1,4 @@
-# dify_publisher.py (v10 - 时区兜底 + 兼容 text/text_input/纯文本/双重JSON/Chunked)
+# dify_publisher.py (v12 - 修复根目录 manifest 写入；双写根+public；时区兜底；多形态解析；支持 chunked)
 # 本地 HTTP 服务：接收 Dify Webhook，分类归档 Markdown 到 GitHub Pages 仓库，并更新 manifest.json 后 push
 
 import http.server
@@ -15,8 +15,10 @@ from typing import Tuple
 # ===== 用户需配置 =====
 GITHUB_REPO_PATH = r"C:\Users\arashiduan\daily-site"  # 本地仓库绝对路径
 PORT = 9397                                           # 监听端口
+PUBLIC_DIR = "public"                                 # public 目录名
+WRITE_TO_ROOT = True                                  # True: 同时写入仓库根目录与 public/
 
-# ===== 时区：优先用 ZoneInfo("Asia/Shanghai")；失败则兜底为固定 UTC+08:00 =====
+# ===== 时区：优先 ZoneInfo("Asia/Shanghai")；失败兜底 UTC+08:00 =====
 try:
     from zoneinfo import ZoneInfo  # Python 3.9+
     try:
@@ -52,10 +54,13 @@ def extract_title_summary(md: str) -> Tuple[str, str]:
     return title, short
 
 
-# ===== 原子写文件 =====
+# ===== 原子写文件（修复根目录写入） =====
 def atomic_write(path: str, data: str):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with tempfile.NamedTemporaryFile('w', delete=False, encoding='utf-8', newline='\n') as tmp:
+    dirpath = os.path.dirname(path) or "."
+    if dirpath and dirpath != ".":
+        os.makedirs(dirpath, exist_ok=True)
+    # 在目标目录创建临时文件，确保同分区原子移动
+    with tempfile.NamedTemporaryFile('w', delete=False, encoding='utf-8', newline='\n', dir=dirpath) as tmp:
         tmp.write(data)
         tmp_path = tmp.name
     shutil.move(tmp_path, path)
@@ -82,7 +87,7 @@ def upsert_manifest(manifest: dict, category: str, yyyy: str, mm: str, dd: str, 
     manifest["months"][category].setdefault(month_key, [])
 
     date_str = f"{yyyy}-{mm}-{dd}"
-    url_path = f"{category}/{yyyy}/{mm}/{dd}.md"
+    url_path = f"{category}/{yyyy}/{mm}/{dd}.md"  # 前端按根路径读取
     new_entry = {
         "date": date_str,
         "title": title,
@@ -128,7 +133,7 @@ def process_dify_report(content: str):
     category = classify(content)
     print(f"✅ 分类：{category}")
 
-    # 用北京时间生成归档路径（ZoneInfo 可用则用；否则使用固定 UTC+08:00）
+    # 用北京时间生成归档路径
     now_cn = datetime.now(CN_TZ)
     yyyy, mm, dd = now_cn.strftime("%Y"), now_cn.strftime("%m"), now_cn.strftime("%d")
     date_str = f"{yyyy}-{mm}-{dd}"
@@ -140,21 +145,31 @@ def process_dify_report(content: str):
     os.chdir(GITHUB_REPO_PATH)
     print(f"📁 仓库目录：{GITHUB_REPO_PATH}")
 
-    # 写 Markdown
-    md_dir = os.path.join("public", category, yyyy, mm)
-    md_path = os.path.join(md_dir, f"{dd}.md")
-    atomic_write(md_path, content)
-    print(f"✅ Markdown 写入：{md_path}")
+    # ---- 写 Markdown：public/ 与根目录双写 ----
+    md_rel = os.path.join(category, yyyy, mm, f"{dd}.md")          # 相对路径（不含 public）
+    atomic_write(os.path.join(PUBLIC_DIR, md_rel), content)        # public 下
+    if WRITE_TO_ROOT:
+        atomic_write(md_rel, content)                              # 根目录
+    print(f"✅ Markdown 写入：{os.path.join(PUBLIC_DIR, md_rel)}" + (" & " + md_rel if WRITE_TO_ROOT else ""))
 
-    # 更新 manifest.json（覆盖同日、顶端插入）
-    manifest_path = os.path.join("public", "manifest.json")
-    manifest = load_or_init_manifest(manifest_path)
+    # ---- 读取 manifest（优先根；没有则 public）----
+    manifest_root = os.path.join("manifest.json")
+    manifest_pub  = os.path.join(PUBLIC_DIR, "manifest.json")
+    manifest_load_path = manifest_root if (WRITE_TO_ROOT and os.path.exists(manifest_root)) else manifest_pub
+    manifest = load_or_init_manifest(manifest_load_path)
+
+    # ---- 更新 manifest（url 指向根路径 game/... 或 ai/...）----
     title, summary = extract_title_summary(content)
     manifest = upsert_manifest(manifest, category, yyyy, mm, dd, title, summary)
-    atomic_write(manifest_path, json.dumps(manifest, ensure_ascii=False, indent=2))
-    print("✅ manifest.json 已更新。")
+    manifest_json = json.dumps(manifest, ensure_ascii=False, indent=2)
 
-    # Git 提交推送
+    # ---- 写回 manifest：public + （可选）根目录 ----
+    atomic_write(manifest_pub, manifest_json)
+    if WRITE_TO_ROOT:
+        atomic_write(manifest_root, manifest_json)
+    print("✅ manifest.json 已更新（public" + (" + root" if WRITE_TO_ROOT else "") + "）。")
+
+    # ---- Git 提交推送 ----
     commit_msg = f"docs(content): Update {category.upper()} daily report for {date_str}"
     print("⏳ Git 提交中 ...")
     try:
@@ -265,7 +280,7 @@ class WebhookHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"--- Dify Publisher (v10) ---  Using TZ: {TZ_LABEL}")
+    print(f"--- Dify Publisher (v12) ---  Using TZ: {TZ_LABEL}")
     print(f"Listening: http://127.0.0.1:{PORT}/webhook")
     print(f"Set Dify Webhook URL to: http://host.docker.internal:{PORT}/webhook")
     with socketserver.TCPServer(("", PORT), WebhookHandler) as httpd:
