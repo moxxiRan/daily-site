@@ -66,7 +66,11 @@ type Entry = {
   _md?: string;            // 运行期解析后的 md 文本
 };
 type Manifest = {
-  title: string;
+  site: {
+    title: string;
+    description: string;
+    baseUrl: string;
+  };
   categories: Record<string, string>;
   months: Record<string, Record<string, Entry[]>>;
 };
@@ -114,7 +118,7 @@ function normalizeMarkdown(md: string = ""): string {
 /** ---------- Component ---------- */
 export default function ElegantDaily() {
   const [manifest, setManifest] = useState<Manifest>({
-    title: "每日精选",
+    site: { title: "每日精选", description: "", baseUrl: "" },
     categories: { ai: "AI", game: "Game" },
     months: {},
   });
@@ -135,17 +139,26 @@ export default function ElegantDaily() {
     async function load() {
       try {
         const res = await fetch("./manifest.json", { cache: "no-store" });
-        const m = (await res.json()) as Manifest;
+        const raw = (await res.json()) as any;
+        const m: Manifest = {
+          site: {
+            title: raw.site?.title ?? raw.title ?? "每日精选",
+            description: raw.site?.description ?? raw.description ?? "",
+            baseUrl: raw.site?.baseUrl ?? raw.baseUrl ?? "",
+          },
+          categories: raw.categories || {},
+          months: raw.months || {},
+        };
         setManifest(m);
         // 默认选第一个有内容的分类+最近月份
         const firstCat = Object.keys(m.months)[0] as keyof Manifest["months"];
         setCat(firstCat || "game");
         const months = Object.keys(m.months[firstCat] || {}).sort().reverse();
         setMonth(months[0] || "");
-      } catch (_e) {
+      } catch {
         // 兜底：内置一些示例数据（如果 manifest 拉失败）
         setManifest({
-          title: "每日精选",
+          site: { title: "每日精选", description: "", baseUrl: "" },
           categories: { ai: "AI", game: "Game" },
           months: {
             ai: {
@@ -212,7 +225,7 @@ export default function ElegantDaily() {
         // p.url已经是相对路径 'ai/2024/01/01.md'，浏览器会自动处理
         const res = await fetch(p.url, { cache: "no-store" });
         md = await res.text();
-      } catch (_e) {
+      } catch {
         md = "（加载 Markdown 失败）";
       }
     }
@@ -239,7 +252,7 @@ export default function ElegantDaily() {
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
-  <title>${manifest.title} · ${curCatLabel} · ${month}</title>
+  <title>${manifest.site.title} · ${curCatLabel} · ${month}</title>
   <link>${location.href.split("#")[0]}</link>
   <description>导出自 daily-site</description>
   <lastBuildDate>${now}</lastBuildDate>
@@ -263,22 +276,34 @@ export default function ElegantDaily() {
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <span className="text-2xl">🎮</span>
           <h1 className="mr-auto text-xl font-bold tracking-tight">
-            {manifest.title} · {formatDate(month + "-01")}
+            {manifest.site.title} · {formatDate(month + "-01")}
           </h1>
 
-          <div className="hidden items-center gap-1 sm:flex">
-            {Object.entries(manifest.categories || {}).map(([k, v]) => (
-              <button
-                key={k}
-                onClick={() => setCat(k as any)}
-                className={cx(
-                  "rounded-full px-3 py-1 text-sm",
-                  cat === k ? "bg-white/15 text-white" : "text-slate-300 hover:bg-white/10"
-                )}
-              >
-                # {v}
-              </button>
-            ))}
+          <div className="hidden items-center rounded-full bg-white/5 p-1 sm:flex">
+            {Object.entries(manifest.categories || {}).map(([k, v]) => {
+              const Icon = k === "ai" ? Newspaper : Calendar;
+              const active = cat === k;
+              return (
+                <button
+                  key={k}
+                  onClick={() => setCat(k as any)}
+                  className={cx(
+                    "relative flex items-center gap-1 rounded-full px-3 py-1 text-sm transition-colors",
+                    active ? "text-white" : "text-slate-300 hover:text-white"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {v}
+                  {active && (
+                    <motion.span
+                      layoutId="cat-pill"
+                      className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-teal-500 to-sky-500"
+                      transition={{ type: "spring", duration: 0.4 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="relative ml-2 hidden md:block">
