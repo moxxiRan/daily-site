@@ -273,13 +273,13 @@ export default function ElegantDaily() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* header */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <span className="text-2xl">🎮</span>
-          <h1 className="mr-auto text-xl font-bold tracking-tight">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
+          <span className="text-xl sm:text-2xl">🎮</span>
+          <h1 className="mr-auto w-full text-base font-bold tracking-tight sm:w-auto sm:text-xl">
             {manifest.site.title} · {formatDate(month + "-01")}
           </h1>
 
-          <div className="hidden items-center rounded-full bg-white/5 p-1 sm:flex">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap sm:items-center sm:rounded-full sm:bg-white/5 sm:p-1">
             {Object.entries(manifest.categories || {}).map(([k, v]) => {
               const Icon = k === "ai" ? Newspaper : Calendar;
               const active = cat === k;
@@ -305,11 +305,10 @@ export default function ElegantDaily() {
               );
             })}
           </div>
-
-          <div className="relative ml-2 hidden md:block">
+          <div className="relative mt-2 w-full sm:mt-0 sm:ml-2 sm:w-64">
             <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
             <input
-              className="w-64 rounded-lg border border-white/10 bg-slate-900 px-7 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40"
+              className="w-full rounded-lg border border-white/10 bg-slate-900 px-7 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40"              placeholder="搜索标题/摘要/标签…"
               placeholder="搜索标题/摘要/标签…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -317,7 +316,7 @@ export default function ElegantDaily() {
           </div>
 
           <button
-            className="ml-2 hidden rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 md:block"
+            className="mt-2 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
             onClick={exportRSS}
             title="导出当前分类&月份 RSS"
           >
@@ -326,7 +325,7 @@ export default function ElegantDaily() {
           </button>
 
           <a
-            className="ml-2 hidden rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 md:block"
+            className="mt-2 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
             href="https://github.com/moxxiran/daily-site"
             target="_blank"
             rel="noreferrer"
@@ -337,7 +336,7 @@ export default function ElegantDaily() {
           </a>
 
           <button
-            className="ml-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
+            className="mt-2 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
             title="切换主题"
           >
@@ -347,7 +346,7 @@ export default function ElegantDaily() {
 
         {/* months scroller */}
         <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2">
+          <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:px-4">
             <button
               onClick={() => scrollMonths(-1)}
               className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10"
@@ -388,19 +387,19 @@ export default function ElegantDaily() {
       </header>
 
       {/* content */}
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
         {entries.length === 0 ? (
           <div className="rounded-xl border border-white/10 bg-slate-900/50 p-8 text-center text-slate-400">
             暂无内容
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {entries.map((p) => (
               <article
                 key={`${p.date}-${p.title}`}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-5 hover:border-white/20"
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-4 sm:p-5 hover:border-white/20"
               >
-                <div className="mb-2 flex items-center gap-2 text-xs text-slate-400">
+                <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-400 sm:text-xs">
                   <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5">
                     <Newspaper className="mr-1 h-3 w-3" />
                     {curCatLabel}
@@ -410,7 +409,7 @@ export default function ElegantDaily() {
                   <span>{readingTime(p.content || p.url ? "500" : p.summary) || 1} 分钟</span>
                 </div>
 
-                <h3 className="mb-1 line-clamp-1 text-lg font-semibold tracking-tight">
+                <h3 className="mb-1 line-clamp-1 text-base font-semibold tracking-tight sm:text-lg">
                   {p.title}
                 </h3>
 
