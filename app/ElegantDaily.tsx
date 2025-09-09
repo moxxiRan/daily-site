@@ -128,11 +128,23 @@ export default function ElegantDaily() {
   const [detail, setDetail] = useState<Entry | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  // 主题切换（简单示例）
+  // 主题切换并同步代码高亮样式
   useEffect(() => {
-    if (theme === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-  }, [theme]);
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+
+    const linkId = "hljs-theme";
+    const base = manifest.site.baseUrl || "";
+    let link = document.getElementById(linkId) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.id = linkId;
+      document.head.appendChild(link);
+    }
+    link.href = `${base}/hljs/github${theme === "dark" ? "-dark" : ""}.css`;
+  }, [theme, manifest.site.baseUrl]);
 
   // 拉取 manifest（优先根目录 ./manifest.json）
   useEffect(() => {

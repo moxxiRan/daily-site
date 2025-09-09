@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import manifest from "../manifest.json";
 import "./globals.css";
-import "highlight.js/styles/github.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
