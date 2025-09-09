@@ -270,16 +270,16 @@ export default function ElegantDaily() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {/* header */}
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
           <span className="text-xl sm:text-2xl">🎮</span>
           <h1 className="mr-auto w-full text-base font-bold tracking-tight sm:w-auto sm:text-xl">
             {manifest.site.title} · {formatDate(month + "-01")}
           </h1>
 
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap sm:items-center sm:rounded-full sm:bg-white/5 sm:p-1">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap sm:items-center sm:rounded-full sm:bg-black/5 sm:p-1 dark:sm:bg-white/5">
             {Object.entries(manifest.categories || {}).map(([k, v]) => {
               const Icon = k === "ai" ? Newspaper : Calendar;
               const active = cat === k;
@@ -308,7 +308,7 @@ export default function ElegantDaily() {
           <div className="relative mt-2 w-full sm:mt-0 sm:ml-2 sm:w-64">
             <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
             <input
-              className="w-full rounded-lg border border-white/10 bg-slate-900 px-7 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40"
+              className="w-full rounded-lg border border-slate-300 bg-white px-7 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500"
               placeholder="搜索标题/摘要/标签…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -316,7 +316,7 @@ export default function ElegantDaily() {
           </div>
 
           <button
-            className="mt-2 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
             onClick={exportRSS}
             title="导出当前分类&月份 RSS"
           >
@@ -325,7 +325,7 @@ export default function ElegantDaily() {
           </button>
 
           <a
-            className="mt-2 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
             href="https://github.com/moxxiran/daily-site"
             target="_blank"
             rel="noreferrer"
@@ -336,7 +336,7 @@ export default function ElegantDaily() {
           </a>
 
           <button
-            className="mt-2 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 sm:mt-0 sm:ml-2 sm:w-auto"
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
             title="切换主题"
           >
@@ -345,11 +345,11 @@ export default function ElegantDaily() {
         </div>
 
         {/* months scroller */}
-        <div className="border-t border-white/10">
+        <div className="border-t border-slate-200 dark:border-white/10">
           <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:px-4">
             <button
               onClick={() => scrollMonths(-1)}
-              className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10"
+              className="rounded-lg border border-slate-300 p-2 text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
               title="向左"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -365,8 +365,8 @@ export default function ElegantDaily() {
                   onClick={() => setMonth(m)}
                   className={cx(
                     "snap-start rounded-lg border px-3 py-2 text-sm",
-                    "border-white/10 text-slate-300 hover:bg-white/10",
-                    month === m && "bg-white/15 text-white"
+                    "border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10",
+                    month === m && "bg-slate-200 text-slate-900 dark:bg-white/15 dark:text-white"
                   )}
                 >
                   <Calendar className="mr-1 inline h-4 w-4" />
@@ -377,7 +377,7 @@ export default function ElegantDaily() {
 
             <button
               onClick={() => scrollMonths(1)}
-              className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10"
+              className="rounded-lg border border-slate-300 p-2 text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
               title="向右"
             >
               <ChevronRight className="h-4 w-4" />
@@ -389,7 +389,7 @@ export default function ElegantDaily() {
       {/* content */}
       <main className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
         {entries.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-slate-900/50 p-8 text-center text-slate-400">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-600 dark:border-white/10 dark:bg-slate-900/50 dark:text-slate-400">
             暂无内容
           </div>
         ) : (
@@ -397,10 +397,10 @@ export default function ElegantDaily() {
             {entries.map((p) => (
               <article
                 key={`${p.date}-${p.title}`}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-4 sm:p-5 hover:border-white/20"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 hover:border-slate-300 dark:border-white/10 dark:bg-slate-900/50 dark:hover:border-white/20"
               >
-                <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-400 sm:text-xs">
-                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5">
+                <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-500 sm:text-xs dark:text-slate-400">
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 dark:border-white/10 dark:bg-white/5">
                     <Newspaper className="mr-1 h-3 w-3" />
                     {curCatLabel}
                   </span>
@@ -418,7 +418,7 @@ export default function ElegantDaily() {
                     {(p.tags || []).map((t) => (
                       <span
                         key={t}
-                        className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300"
+                        className="rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
                       >
                         # {t}
                       </span>
@@ -433,14 +433,14 @@ export default function ElegantDaily() {
                 <div className="mt-4 flex items-center justify-between">
                   <button
                     onClick={() => openDetail(p)}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10"
+                    className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                   >
                     查看详情
                   </button>
                   {!!p.url && (
                     <a
                       href={p.url}
-                      className="text-sm text-teal-300 hover:underline"
+                      className="text-sm text-teal-600 hover:underline dark:text-teal-300"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -468,17 +468,17 @@ export default function ElegantDaily() {
             onClick={() => setDetail(null)}
           >
             <motion.div
-              className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/10 bg-slate-950"
+              className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
               transition={{ type: "spring", damping: 22, stiffness: 220 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="border-b border-white/10 px-5 py-3">
+              <div className="border-b border-slate-200 px-5 py-3 dark:border-white/10">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold text-slate-200">
-                    <span className="mr-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs">
+                  <div className="font-semibold text-slate-700 dark:text-slate-200">
+                    <span className="mr-2 inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs dark:border-white/10 dark:bg-white/5">
                       <Newspaper className="mr-1 h-3 w-3" />
                       {curCatLabel}
                     </span>
@@ -486,16 +486,16 @@ export default function ElegantDaily() {
                   </div>
                   <button
                     onClick={() => setDetail(null)}
-                    className="rounded-lg border border-white/10 px-2 py-1 text-slate-300 hover:bg-white/10"
+                    className="rounded-lg border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
                     aria-label="关闭"
                   >
                     关闭
                   </button>
                 </div>
-                <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-50">{detail.title}</h1>
+                <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{detail.title}</h1>
                 <div className="mb-4 flex flex-wrap gap-2">
                   {(detail.tags || []).map((t) => (
-                    <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300">
+                    <span key={t} className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                       # {t}
                     </span>
                   ))}
@@ -515,7 +515,7 @@ export default function ElegantDaily() {
       </AnimatePresence>
 
       {/* footer */}
-      <footer className="border-t border-white/10 px-4 py-8 text-center text-sm text-slate-400">
+      <footer className="border-t border-slate-200 px-4 py-8 text-center text-sm text-slate-600 dark:border-white/10 dark:text-slate-400">
         <div className="mx-auto max-w-6xl">
           <p>
             本示例：<strong>React + Tailwind + Framer Motion</strong>（零后端）。
