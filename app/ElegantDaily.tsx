@@ -580,7 +580,7 @@ export default function ElegantDaily() {
             </div>
             <div>
               <div className="hidden text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300 sm:block">Daily • {manifest.categories?.[cat]}</div>
-              <div className="-mt-0.5 font-semibold">{manifest.site.title} · {formatDate(todayIso)}</div>
+              <div className="-mt-0.5 font-semibold">日报精选 · {formatDate(todayIso)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -598,14 +598,14 @@ export default function ElegantDaily() {
               )}
               <span className="hidden sm:inline">主题</span>
             </button>
-            <button onClick={exportRSS} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
+            <button onClick={exportRSS} className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
               <Rss className="h-4 w-4" /> <span className="hidden sm:inline">RSS</span>
             </button>
             <a
               href="https://github.com/moxxiran/daily-site"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
             >
               <Github className="h-4 w-4" /> <span className="hidden sm:inline">GitHub</span>
             </a>
@@ -738,17 +738,10 @@ export default function ElegantDaily() {
                     {p.title}
                   </h3>
                   {!!p.summary && (
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300/90">{cleanSummary(p.summary)}</p>
+                    <p className="mt-2 sm:mt-2.5 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300/90">{cleanSummary(p.summary)}</p>
                   )}
-                {!!(p.tags || []).length && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                    {(p.tags || []).map((t) => (
-                        <span key={t} className="rounded-full border border-slate-200 bg-white/70 px-2.5 py-1 text-[11px] text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"># {t}</span>
-                    ))}
-                  </div>
-                )}
 
-                  <div className="mt-4 flex items-center justify-end">
+                  <div className="mt-3 flex items-center justify-end">
                     <motion.button
                     onClick={() => openDetail(p)}
                       whileTap={{ scale: 0.98 }}
@@ -801,7 +794,7 @@ export default function ElegantDaily() {
                 <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{detail.title}</h1>
 
                 {/* meta row - 显示日报整体信息而非单条新闻信息 */}
-                <div className="mb-4 flex flex-wrap items-center gap-2">
+                <div className="mb-4 flex flex-wrap items-center gap-2 detail-meta">
                   <span className="chip chip--meta">
                     <Newspaper className="h-3.5 w-3.5" /> 
                     游戏行业日报
@@ -818,7 +811,7 @@ export default function ElegantDaily() {
 
                 {/* mini TOC */}
                 {Array.isArray(detail._toc) && detail._toc.length > 0 ? (
-                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
+                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 mini-toc dark:border-white/10 dark:bg-white/5">
                     <h3 className="mb-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
                       📋 本期内容 ({detail._toc.length} 条)
                     </h3>

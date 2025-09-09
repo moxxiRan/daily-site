@@ -39,6 +39,20 @@
   }
 }
 
+/* 抽屉头部：隐藏第3个 meta 胶囊（“x 条资讯”） */
+.detail-meta .chip:nth-child(3) { display: none; }
+
+/* mini TOC 标题去掉计数，只保留文案 */
+.mini-toc h3 { position: relative; color: transparent; }
+.mini-toc h3::after {
+  content: "📋 本期内容";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #475569; /* slate-600 */
+}
+.dark .mini-toc h3::after { color: #cbd5e1; /* slate-300 */ }
+
 .markdown-body ul {
   list-style: disc;
   padding-left: 1.5rem;

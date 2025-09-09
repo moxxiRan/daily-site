@@ -1,0 +1,13 @@
+﻿*** Begin Patch
+*** Update File: app/ElegantDaily.tsx
+@@
+                   <span className="chip chip--meta">
+                     <Calendar className="h-3.5 w-3.5" /> 
+                     {formatDate(detail.date)}
+                   </span>
+-                  <span className="chip chip--meta">
+-                    <FileText className="h-3.5 w-3.5" /> 
+-                    {detail._toc?.length || 0} 条资讯                  </span>
++                  {/* removed: count chip */}
+                 </div>
+*** End Patch
