@@ -623,7 +623,7 @@ export default function ElegantDaily() {
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Category segmented control */}
-            <div className="relative isolate inline-flex rounded-full bg-slate-100 p-1 ring-1 ring-slate-200 dark:bg-slate-950/40 dark:ring-white/10">
+            <div className="relative isolate flex w-full overflow-hidden rounded-full bg-slate-100 p-1 ring-1 ring-slate-200 dark:bg-slate-950/40 dark:ring-white/10">
               {Object.keys(manifest.categories || {}).map((k) => (
                 <button
                   key={k}
@@ -634,11 +634,11 @@ export default function ElegantDaily() {
                     setDetail(null);
                   }}
                   className={cx(
-                    "relative z-10 px-4 py-2 text-sm font-medium transition",
+                    "relative z-10 flex-1 min-w-0 px-3 py-2 text-center text-sm font-medium transition sm:px-4",
                     cat === k ? "text-slate-900 dark:text-slate-100" : "text-slate-600 dark:text-slate-300"
                   )}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-2">
                     {(k as string) === "ai" ? <Newspaper className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
                     {manifest.categories?.[k]}
                   </span>
