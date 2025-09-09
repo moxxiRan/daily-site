@@ -126,13 +126,22 @@ export default function ElegantDaily() {
   const [month, setMonth] = useState<string>("");
   const [query, setQuery] = useState<string>("");
   const [detail, setDetail] = useState<Entry | null>(null);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem("theme") as "dark" | "light" | null) ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light")
+      );
+    }
+    return "light";
+  });
 
   // 主题切换并同步代码高亮样式
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
+    root.classList.toggle("dark", theme === "dark");
 
     const linkId = "hljs-theme";
     const base = manifest.site.baseUrl || "";
@@ -144,6 +153,7 @@ export default function ElegantDaily() {
       document.head.appendChild(link);
     }
     link.href = `${base}/hljs/github${theme === "dark" ? "-dark" : ""}.css`;
+    localStorage.setItem("theme", theme);
   }, [theme, manifest.site.baseUrl]);
 
   // 拉取 manifest（优先根目录 ./manifest.json）
