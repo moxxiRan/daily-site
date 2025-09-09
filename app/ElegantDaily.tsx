@@ -18,9 +18,9 @@ const mdComponents = {
   blockquote: ({ children, ...rest }: any) => (
     <div
       {...rest}
-      className="my-4 rounded-xl border-l-4 border-teal-400/60 bg-teal-400/5 px-4 py-3 text-slate-200"
+      className="my-4 rounded-xl border-l-4 border-teal-400/60 bg-teal-400/10 px-4 py-3 text-slate-700 dark:bg-teal-400/5 dark:text-slate-200"
     >
-      <div className="mb-1 text-[12px] font-medium uppercase tracking-wide text-teal-300/80">Note</div>
+      <div className="mb-1 text-[12px] font-medium uppercase tracking-wide text-teal-600 dark:text-teal-300/80">Note</div>
       <blockquote className="[&>*:last-child]:mb-0">{children}</blockquote>
     </div>
   ),
@@ -28,7 +28,7 @@ const mdComponents = {
     const code = String(children).replace(/\n$/, "");
     if (inline) {
       return (
-        <code className="rounded bg-slate-900/70 px-1.5 py-0.5 text-[92%] text-teal-300" {...props}>
+        <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[92%] text-teal-600 dark:bg-slate-900/70 dark:text-teal-300" {...props}>
           {children}
         </code>
       );
@@ -48,7 +48,7 @@ const mdComponents = {
   pre: ({ children, ...props }: any) => (
     <pre
       {...props}
-      className="my-4 overflow-auto rounded-xl bg-slate-900/70 p-4 text-sm leading-6 shadow-inner"
+      className="my-4 overflow-auto rounded-xl bg-slate-100 p-4 text-sm leading-6 shadow-inner dark:bg-slate-900/70"
     >
       {children}
     </pre>
@@ -289,7 +289,9 @@ export default function ElegantDaily() {
                   onClick={() => setCat(k as any)}
                   className={cx(
                     "relative flex items-center gap-1 rounded-full px-3 py-1 text-sm transition-colors",
-                    active ? "text-white" : "text-slate-300 hover:text-white"
+                    active
+                      ? "text-white"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -306,7 +308,7 @@ export default function ElegantDaily() {
             })}
           </div>
           <div className="relative mt-2 w-full sm:mt-0 sm:ml-2 sm:w-64">
-            <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               className="w-full rounded-lg border border-slate-300 bg-white px-7 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500"
               placeholder="搜索标题/摘要/标签…"
@@ -427,7 +429,7 @@ export default function ElegantDaily() {
                 )}
 
                 {!!p.summary && (
-                  <p className="line-clamp-3 text-sm text-slate-300/90">{p.summary}</p>
+                  <p className="line-clamp-3 text-sm text-slate-600 dark:text-slate-300/90">{p.summary}</p>
                 )}
 
                 <div className="mt-4 flex items-center justify-between">
