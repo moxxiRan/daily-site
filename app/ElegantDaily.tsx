@@ -308,7 +308,7 @@ export default function ElegantDaily() {
           <div className="relative mt-2 w-full sm:mt-0 sm:ml-2 sm:w-64">
             <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
             <input
-              className="w-full rounded-lg border border-white/10 bg-slate-900 px-7 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40"              placeholder="搜索标题/摘要/标签…"
+              className="w-full rounded-lg border border-white/10 bg-slate-900 px-7 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-teal-400/40"
               placeholder="搜索标题/摘要/标签…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
