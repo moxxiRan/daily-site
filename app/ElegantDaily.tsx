@@ -140,8 +140,11 @@ export default function ElegantDaily() {
   // 主题切换并同步样式
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.style.colorScheme = theme;
+    // 只有当主题真的改变时才更新 DOM
+    if (root.classList.contains('dark') !== (theme === 'dark')) {
+      root.classList.toggle("dark", theme === "dark");
+      root.style.colorScheme = theme;
+    }
 
     const base = manifest.site.baseUrl || "";
 
