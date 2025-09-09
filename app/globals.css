@@ -9,6 +9,27 @@
 }
 
 @layer components {
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs leading-normal;
+  }
+  .chip--meta { 
+    @apply border-slate-300 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300; 
+  }
+  .chip--link { 
+    @apply border-teal-300 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/30 dark:bg-teal-400/10 dark:text-teal-300 dark:hover:bg-teal-400/20; 
+  }
+
+  .markdown-body {
+    @apply max-w-none leading-relaxed text-[15px];
+  }
+  .dark .markdown-body {
+    @apply text-slate-200;
+  }
+  .markdown-body h2 { @apply mt-8 mb-3 text-xl font-bold tracking-tight text-sky-300; }
+  .markdown-body h3 { @apply mt-6 mb-2 text-lg font-semibold; }
+  .markdown-body p { @apply my-3; }
+  .markdown-body ul { @apply my-3 pl-6; }
+  .markdown-body h2::before { content: ""; }
   .markdown-body h2 {
     @apply mt-8 mb-4 text-xl font-bold text-sky-700 dark:text-sky-300;
   }

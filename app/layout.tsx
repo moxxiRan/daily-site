@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import manifest from "../manifest.json";
 import "./globals.css";
 
@@ -16,6 +17,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: manifest.site.title,
   description: manifest.site.description,
+  keywords: ["AI", "游戏", "日报", "科技", "新闻"],
+  authors: [{ name: "Daily Site" }],
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#020618" },
+  ],
 };
 
 export default function RootLayout({
@@ -25,26 +37,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme') || 
-                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                  document.documentElement.classList.toggle('dark', theme === 'dark');
-                  document.documentElement.style.colorScheme = theme;
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function(){try{
+            var t=localStorage.getItem('theme')||
+              (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+            document.documentElement.classList.toggle('dark', t==='dark');
+            document.documentElement.style.colorScheme=t;
+          }catch(e){}})();`}
+        </Script>
         {children}
       </body>
     </html>
