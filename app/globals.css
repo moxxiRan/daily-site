@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@layer components {
+  .markdown-body h2 {
+    @apply text-xl text-sky-700 font-bold mt-8 mb-4;
+  }
+  .markdown-body ul > li::marker {
+    @apply text-sky-700;
+  }
+  /* 视需要继续覆盖 h3、p 等样式 */
+}
+
+.markdown-body ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}

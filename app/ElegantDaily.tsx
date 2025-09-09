@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -9,31 +11,21 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import hljs from "highlight.js";
 
 // 放在 import 之后
 const mdComponents = {
-  h1: (p:any) => <h1 {...p} className="mt-6 mb-3 text-3xl font-semibold tracking-tight" />,
-  h2: (p:any) => <h2 {...p} className="mt-6 mb-2 text-2xl font-semibold tracking-tight" />,
-  h3: (p:any) => <h3 {...p} className="mt-5 mb-2 text-xl font-semibold tracking-tight" />,
-  p:  (p:any) => <p  {...p} className="my-3 leading-7 text-slate-200/95" />,
-
-  ul: (p:any) => (
-    <ul {...p} className="my-4 ml-6 list-disc space-y-2 marker:text-teal-300" />
-  ),
-  ol: (p:any) => (
-    <ol {...p} className="my-4 ml-6 list-decimal space-y-2 marker:text-teal-300" />
-  ),
-  li: (p:any) => <li {...p} className="pl-1" />,
-
-  blockquote: ({children,...rest}:any) => (
-    <div {...rest}
-      className="my-4 rounded-xl border-l-4 border-teal-400/60 bg-teal-400/5 px-4 py-3 text-slate-200">
+  blockquote: ({ children, ...rest }: any) => (
+    <div
+      {...rest}
+      className="my-4 rounded-xl border-l-4 border-teal-400/60 bg-teal-400/5 px-4 py-3 text-slate-200"
+    >
       <div className="mb-1 text-[12px] font-medium uppercase tracking-wide text-teal-300/80">Note</div>
       <blockquote className="[&>*:last-child]:mb-0">{children}</blockquote>
     </div>
   ),
-
-  code: ({inline, className, children, ...props}:any) => {
+  code: ({ inline, className, children, ...props }: any) => {
+    const code = String(children).replace(/\n$/, "");
     if (inline) {
       return (
         <code className="rounded bg-slate-900/70 px-1.5 py-0.5 text-[92%] text-teal-300" {...props}>
@@ -41,26 +33,26 @@ const mdComponents = {
         </code>
       );
     }
+    const language = /language-(\w+)/.exec(className || "")?.[1];
+    const html = language
+      ? hljs.highlight(code, { language }).value
+      : hljs.highlightAuto(code).value;
     return (
-      <code className={`block ${className||""}`} {...props}>{children}</code>
+      <code
+        dangerouslySetInnerHTML={{ __html: html }}
+        className={`hljs ${className || ""}`}
+        {...props}
+      />
     );
   },
-  pre: ({children,...props}:any) => (
-    <pre {...props}
-      className="my-4 overflow-auto rounded-xl bg-slate-900/70 p-4 text-sm leading-6 shadow-inner" >
+  pre: ({ children, ...props }: any) => (
+    <pre
+      {...props}
+      className="my-4 overflow-auto rounded-xl bg-slate-900/70 p-4 text-sm leading-6 shadow-inner"
+    >
       {children}
     </pre>
   ),
-
-  hr: (p:any) => <hr {...p} className="my-8 border-t border-white/10" />,
-  a:  (p:any) => <a {...p} className="text-teal-300 underline-offset-4 hover:underline" />,
-  table: (p:any) => (
-    <table {...p} className="my-4 w-full overflow-hidden rounded-lg border border-white/10 text-sm" />
-  ),
-  thead: (p:any) => <thead {...p} className="bg-white/5 text-slate-200" />,
-  th: (p:any) => <th {...p} className="px-3 py-2 text-left" />,
-  td: (p:any) => <td {...p} className="px-3 py-2 text-slate-300/90" />,
-  tr: (p:any) => <tr {...p} className="border-t border-white/10 even:bg-white/5" />,
 };
 
 /** ---------- Types ---------- */
@@ -101,6 +93,12 @@ function readingTime(md?: string): number {
 }
 function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
+}
+
+function stripFirstHeading(md: string = "", title: string): string {
+  const safe = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^#\\s*${safe}\\s*\n`);
+  return md.replace(re, "");
 }
 
 function normalizeMarkdown(md: string = ""): string {
@@ -218,7 +216,8 @@ export default function ElegantDaily() {
         md = "（加载 Markdown 失败）";
       }
     }
-    setDetail({ ...p, _md: normalizeMarkdown(stripFrontmatter(md)) });
+    const cleaned = stripFirstHeading(md, p.title);
+    setDetail({ ...p, _md: normalizeMarkdown(stripFrontmatter(cleaned)) });
   }
 
   function exportRSS() {
@@ -477,13 +476,13 @@ export default function ElegantDaily() {
                     </span>
                   ))}
                 </div>
-                <article className="prose prose-invert prose-slate max-w-none prose-headings:font-semibold prose-a:text-teal-300 prose-strong:text-slate-100 prose-blockquote:border-l-teal-400/50 prose-img:rounded-xl prose-pre:bg-slate-900/70 prose-code:text-teal-300">
+                <article className="markdown-body p-5">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkBreaks]}
                     components={mdComponents}
                   >
                     {detail._md || "（暂无内容）"}
-                    </ReactMarkdown>
+                  </ReactMarkdown>
                 </article>
               </div>
             </motion.div>
