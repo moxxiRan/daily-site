@@ -126,33 +126,47 @@ export default function ElegantDaily() {
   const [month, setMonth] = useState<string>("");
   const [query, setQuery] = useState<string>("");
   const [detail, setDetail] = useState<Entry | null>(null);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window !== "undefined") {
-      return (
-        (localStorage.getItem("theme") as "dark" | "light" | null) ||
-        (window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light")
-      );
-    }
-    return "light";
-  });
+  const [theme, setTheme] = useState<"dark" | "light">("light");
 
-  // 主题切换并同步代码高亮样式
+  // 挂载后再初始化主题
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") as "dark" | "light" | null;
+    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+    setTheme(stored || preferred);
+  }, []);
+
+  // 主题切换并同步样式
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
+    root.style.colorScheme = theme;
 
-    const linkId = "hljs-theme";
     const base = manifest.site.baseUrl || "";
-    let link = document.getElementById(linkId) as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.id = linkId;
-      document.head.appendChild(link);
+
+    // 代码高亮主题
+    const hlId = "hljs-theme";
+    let hlLink = document.getElementById(hlId) as HTMLLinkElement | null;
+    if (!hlLink) {
+      hlLink = document.createElement("link");
+      hlLink.rel = "stylesheet";
+      hlLink.id = hlId;
+      document.head.appendChild(hlLink);
     }
-    link.href = `${base}/hljs/github${theme === "dark" ? "-dark" : ""}.css`;
+    hlLink.href = `${base}/hljs/github${theme === "dark" ? "-dark" : ""}.css`;
+
+    // Markdown 样式
+    const mdId = "md-theme";
+    let mdLink = document.getElementById(mdId) as HTMLLinkElement | null;
+    if (!mdLink) {
+      mdLink = document.createElement("link");
+      mdLink.rel = "stylesheet";
+      mdLink.id = mdId;
+      document.head.appendChild(mdLink);
+    }
+    mdLink.href = `https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-${theme}.min.css`;
+
     localStorage.setItem("theme", theme);
   }, [theme, manifest.site.baseUrl]);
 
