@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
@@ -13,7 +15,6 @@
   .markdown-body ul > li::marker {
     @apply text-sky-700 dark:text-sky-300;
   }
-  /* 视需要继续覆盖 h3、p 等样式 */
 }
 
 .markdown-body ul {
