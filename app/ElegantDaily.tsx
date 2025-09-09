@@ -24,6 +24,17 @@ function getTextFromChildren(children: any): string {
   return "";
 }
 
+// 清理卡片摘要开头的“🎮 游戏行业速递 + 日期”前缀
+function cleanSummary(input?: string): string | undefined {
+  if (!input) return input;
+  const s = String(input);
+  const cleaned = s
+    // 去掉可选的手柄 emoji、空格、分隔符和日期，如：🎮 游戏行业速递 2025年09月09日
+    .replace(/^[\u{1F3AE}\s]*游戏行业速递\s*[-—:：]*\s*\d{4}年\d{2}月\d{2}日(?:\s*\([^\)]*\))?\s*/u, "")
+    .trimStart();
+  return cleaned;
+}
+
 const mdComponents = {
   // 隐藏分类/来源的引用块，因为我们会在 H2 中显示
   blockquote: ({ children, ...rest }: any) => {
@@ -335,6 +346,8 @@ export default function ElegantDaily() {
   const [month, setMonth] = useState<string>("");
   const [query, setQuery] = useState<string>("");
   const [detail, setDetail] = useState<Entry | null>(null);
+  const detailScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -387,10 +400,26 @@ export default function ElegantDaily() {
       mdLink.id = mdId;
       document.head.appendChild(mdLink);
     }
-    mdLink.href = `https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-${theme}.min.css`;
+  mdLink.href = `https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-${theme}.min.css`;
 
     localStorage.setItem("theme", theme);
   }, [theme, manifest.site.baseUrl]);
+
+  // 监听抽屉内部滚动，控制返回顶部按钮显隐
+  useEffect(() => {
+    const el = detailScrollRef.current;
+    if (!el) {
+      setShowBackToTop(false);
+      return;
+    }
+    const onScroll = () => setShowBackToTop(el.scrollTop > 300);
+    el.addEventListener('scroll', onScroll, { passive: true } as any);
+    // 初始计算
+    onScroll();
+    return () => {
+      el.removeEventListener('scroll', onScroll as any);
+    };
+  }, [detail]);
 
   // 拉取 manifest（优先根目录 ./manifest.json）
   useEffect(() => {
@@ -706,10 +735,10 @@ export default function ElegantDaily() {
                 </div>
 
                   <h3 className="line-clamp-1 text-base font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-lg">
-                  {p.title}
-                </h3>
+                    {p.title}
+                  </h3>
                   {!!p.summary && (
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300/90">{p.summary}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300/90">{cleanSummary(p.summary)}</p>
                   )}
                 {!!(p.tags || []).length && (
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -750,7 +779,8 @@ export default function ElegantDaily() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
               transition={{ type: "spring", damping: 24, stiffness: 260 }}
-              className="relative h-[92vh] w-full max-w-[1200px] overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-950"
+              ref={detailScrollRef}
+              className="relative h-[92vh] w-full max-w-[1200px] overflow-y-auto scroll-smooth rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-950"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/80 px-5 py-3 backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
@@ -828,6 +858,25 @@ export default function ElegantDaily() {
                   </button>
                 </div>
               </div>
+
+              {/* 抽屉内悬浮返回顶部（随抽屉滚动视口固定） */}
+              <AnimatePresence>
+                {showBackToTop && (
+                  <div className="sticky bottom-5 z-20 flex w-full justify-end px-5 pointer-events-none">
+                    <motion.button
+                      key="back-to-top"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      onClick={() => detailScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                      aria-label="返回顶部"
+                      className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-md backdrop-blur hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/20"
+                    >
+                      <ArrowUp className="h-4 w-4" /> 顶部
+                    </motion.button>
+                  </div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}

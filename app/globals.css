@@ -20,18 +20,19 @@
   }
 
   .markdown-body {
-    @apply max-w-none leading-relaxed text-[15px];
+    /* 填满抽屉内容区域，避免正文看起来只占一半 */
+    @apply w-full max-w-none leading-relaxed text-[16px] md:text-[17px];
   }
   .dark .markdown-body {
     @apply text-slate-200;
   }
-  .markdown-body h2 { @apply mt-8 mb-3 text-xl font-bold tracking-tight text-sky-300; }
+  .markdown-body h2 { @apply mt-10 mb-4 text-xl font-bold tracking-tight text-sky-300 scroll-mt-24; }
   .markdown-body h3 { @apply mt-6 mb-2 text-lg font-semibold; }
-  .markdown-body p { @apply my-3; }
-  .markdown-body ul { @apply my-3 pl-6; }
+  .markdown-body p { @apply my-4 leading-7; }
+  .markdown-body ul { @apply my-4 pl-6; }
   .markdown-body h2::before { content: ""; }
   .markdown-body h2 {
-    @apply mt-8 mb-4 text-xl font-bold text-sky-700 dark:text-sky-300;
+    @apply mt-10 mb-4 text-xl font-bold text-sky-700 dark:text-sky-300;
   }
   .markdown-body ul > li::marker {
     @apply text-sky-700 dark:text-sky-300;
