@@ -168,6 +168,47 @@ def parse_date_from_h1(md: str) -> Optional[Tuple[str, str, str]]:
     return None
 
 
+def parse_date_any(md: str) -> Optional[Tuple[str, str, str]]:
+    """
+    更稳健的日期解析：
+    1) frontmatter: date: 2025-09-09 / 2025年09月09日 等
+    2) H1 标题中
+    3) 全文首次出现的日期（同样的格式）
+    """
+    if not md:
+        return None
+
+    # 1) frontmatter
+    mfm = re.search(r'^\s*date\s*:\s*([^\n\r]+)$', md, flags=re.M | re.I)
+    if mfm:
+        s = mfm.group(1).strip().strip('"\'')
+        m1 = re.search(r'^(20\d{2})[./-](\d{1,2})[./-](\d{1,2})$', s)
+        if m1:
+            y, mm, dd = m1.group(1), m1.group(2), m1.group(3)
+            return y, f"{int(mm):02d}", f"{int(dd):02d}"
+        m2 = re.search(r'^(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?$', s)
+        if m2:
+            y, mm, dd = m2.group(1), m2.group(2), m2.group(3)
+            return y, f"{int(mm):02d}", f"{int(dd):02d}"
+
+    # 2) H1
+    h1d = parse_date_from_h1(md)
+    if h1d:
+        return h1d
+
+    # 3) 全文首次出现
+    m3 = re.search(r'(20\d{2})[./-](\d{1,2})[./-](\d{1,2})', md)
+    if m3:
+        y, mm, dd = m3.group(1), m3.group(2), m3.group(3)
+        return y, f"{int(mm):02d}", f"{int(dd):02d}"
+    m4 = re.search(r'(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?', md)
+    if m4:
+        y, mm, dd = m4.group(1), m4.group(2), m4.group(3)
+        return y, f"{int(mm):02d}", f"{int(dd):02d}"
+
+    return None
+
+
 # ===== 原子写文件 =====
 def atomic_write(path: str, data: str):
     dirpath = os.path.dirname(path) or "."
@@ -248,7 +289,7 @@ def process_dify_report(content: str):
     now_cn = datetime.now(CN_TZ)
     yyyy, mm, dd = now_cn.strftime("%Y"), now_cn.strftime("%m"), now_cn.strftime("%d")
     # 优先使用 H1 标题中的日期
-    parsed = parse_date_from_h1(content)
+    parsed = parse_date_any(content)
     if parsed:
         yyyy, mm, dd = parsed
         print(f"📅 使用 H1 日期命名：{yyyy}-{mm}-{dd}")
