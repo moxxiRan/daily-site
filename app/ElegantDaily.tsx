@@ -224,6 +224,16 @@ function readingTime(md?: string): number {
 function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
 }
+// 处理静态资源前缀（GitHub Pages basePath）
+function asset(path: string): string {
+  try {
+    const prefix = (typeof window !== 'undefined' && (window as any).__NEXT_DATA__?.assetPrefix) || '';
+    const p = path.startsWith('/') ? path : '/' + path;
+    return (prefix ? prefix.replace(/\/$/, '') : '') + p;
+  } catch {
+    return path;
+  }
+}
 function makeExcerpt(md: string): string {
   const lines = md.split('\n');
   for (const raw of lines) {
@@ -439,7 +449,7 @@ export default function ElegantDaily() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/manifest.json", { 
+        const res = await fetch(asset('/manifest.json'), { 
           cache: "no-store",
           signal: AbortController && new AbortController().signal 
         });
