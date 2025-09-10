@@ -453,6 +453,10 @@ export default function ElegantDaily() {
           cache: "no-store",
           signal: AbortController && new AbortController().signal 
         });
+        let res = await fetch('./manifest.json', { cache: 'no-store', signal: AbortController && new AbortController().signal });
+        if (!res.ok) {
+          try { res = await fetch(asset('/manifest.json'), { cache: 'no-store' }); } catch {}
+        }
         const raw = (await res.json()) as any;
         const m: Manifest = {
           site: {
@@ -471,6 +475,11 @@ export default function ElegantDaily() {
         const months = Object.keys(m.months[pickCat] || {}).sort().reverse();
         setMonth(months[0] || "");
       } catch {
+        // 使用空结构兜底并提前返回，避免注入演示数据
+        setManifest({ site: { title: "", description: "", baseUrl: "" }, categories: { ai: "AI", game: "Game" }, months: { ai: {}, game: {} } });
+        setCat("game");
+        setMonth("");
+        return;
         // 兜底：内置一些示例数据（如果 manifest 拉失败）
         setManifest({
           site: { title: "每日精选", description: "", baseUrl: "" },
