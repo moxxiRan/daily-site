@@ -449,10 +449,6 @@ export default function ElegantDaily() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(asset('/manifest.json'), { 
-          cache: "no-store",
-          signal: AbortController && new AbortController().signal 
-        });
         let res = await fetch('./manifest.json', { cache: 'no-store', signal: AbortController && new AbortController().signal });
         if (!res.ok) {
           try { res = await fetch(asset('/manifest.json'), { cache: 'no-store' }); } catch {}
