@@ -224,6 +224,19 @@ function readingTime(md?: string): number {
 function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
 }
+function makeExcerpt(md: string): string {
+  const lines = md.split('\n');
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (!t) continue;
+    if (/^#{1,6}\s/.test(t)) continue;
+    if (/^>/.test(t)) continue;
+    if (/^(\-|\*|\+|\d+\.)\s/.test(t)) continue;
+    const plain = t.replace(/[`*_#>\[\]\(\)!]/g, '').replace(/\s+/g, ' ');
+    return plain.slice(0, 120);
+  }
+  return md.replace(/\s+/g, ' ').slice(0, 120);
+}
 
 function stripFirstHeading(md: string = "", title: string): string {
   const safe = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -351,6 +364,7 @@ export default function ElegantDaily() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [summaryCache, setSummaryCache] = useState<Record<string, string>>({});
 
   // 今日日期（本地时区）
   const todayIso = useMemo(() => {
@@ -425,7 +439,7 @@ export default function ElegantDaily() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("./manifest.json", { 
+        const res = await fetch("/manifest.json", { 
           cache: "no-store",
           signal: AbortController && new AbortController().signal 
         });
@@ -441,9 +455,10 @@ export default function ElegantDaily() {
         };
         setManifest(m);
         // 默认选第一个有内容的分类+最近月份
-        const firstCat = Object.keys(m.months)[0] as keyof Manifest["months"];
-        setCat(firstCat || "game");
-        const months = Object.keys(m.months[firstCat] || {}).sort().reverse();
+        const cats = Object.keys(m.months) as (keyof Manifest["months"])[];
+        const pickCat = cats.find((c) => Object.keys(m.months[c] || {}).length > 0) || (cats[0] as any) || "game";
+        setCat(pickCat);
+        const months = Object.keys(m.months[pickCat] || {}).sort().reverse();
         setMonth(months[0] || "");
       } catch {
         // 兜底：内置一些示例数据（如果 manifest 拉失败）
@@ -498,6 +513,32 @@ export default function ElegantDaily() {
       [p.title, p.summary, (p.tags || []).join(" ")].join(" ").toLowerCase().includes(q)
     );
   }, [manifest, cat, month, query]);
+
+  // 懒加载摘要：若清单中缺失 summary，则抓取对应 Markdown 提取首段
+  useEffect(() => {
+    let aborted = false;
+    async function loadExcerpts() {
+      const targets = (manifest.months?.[cat]?.[month] || []).filter((p) => !p.summary && p.url);
+      await Promise.allSettled(
+        targets.map(async (p) => {
+          const key = `${p.date}-${p.title}`;
+          if (summaryCache[key]) return;
+          try {
+            const res = await fetch(p.url!, { cache: "no-store" });
+            const md = await res.text();
+            const cleaned = stripLeadingTocAndIntro(stripFirstHeading(md, p.title));
+            const normalized = normalizeMarkdown(stripFrontmatter(cleaned));
+            const excerpt = makeExcerpt(normalized);
+            if (!aborted && excerpt) setSummaryCache((prev) => ({ ...prev, [key]: excerpt }));
+          } catch {}
+        })
+      );
+    }
+    loadExcerpts();
+    return () => {
+      aborted = true;
+    };
+  }, [manifest, cat, month]);
 
   const curCatLabel = manifest.categories?.[cat] || cat;
   const monthScrollerRef = useRef<HTMLDivElement | null>(null);
@@ -737,8 +778,10 @@ export default function ElegantDaily() {
                   <h3 className="line-clamp-1 text-base font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-lg">
                     {p.title}
                   </h3>
-                  {!!p.summary && (
-                    <p className="mt-2 sm:mt-2.5 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300/90">{cleanSummary(p.summary)}</p>
+                  {(cleanSummary(p.summary) || summaryCache[`${p.date}-${p.title}`]) && (
+                    <p className="mt-2 sm:mt-2.5 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300/90">
+                      {cleanSummary(p.summary) || summaryCache[`${p.date}-${p.title}`]}
+                    </p>
                   )}
 
                   <div className="mt-3 flex items-center justify-end">

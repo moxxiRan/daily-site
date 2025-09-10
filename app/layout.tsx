@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: manifest.site.title,
+  title: "日报精选",
   description: manifest.site.description,
   keywords: ["AI", "游戏", "日报", "科技", "新闻"],
   authors: [{ name: "Daily Site" }],
