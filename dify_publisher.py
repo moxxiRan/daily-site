@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 import tempfile
 import shutil
 import re
-from typing import Tuple
+from typing import Tuple, Optional
 
 # ===== 用户需配置 =====
 GITHUB_REPO_PATH = r"C:\Users\arashiduan\daily-site"  # 本地仓库绝对路径
@@ -141,6 +141,33 @@ def extract_title_summary(md: str) -> Tuple[str, str]:
     return title, short
 
 
+# ===== 从 H1 标题解析日期（优先使用） =====
+def parse_date_from_h1(md: str) -> Optional[Tuple[str, str, str]]:
+    """
+    从第一行 H1（# 标题）中提取日期，支持以下格式：
+    - 2025-09-09 / 2025/09/09 / 2025.09.09
+    - 2025年09月09日（“日”可省略）
+    找不到则返回 None。
+    """
+    if not md:
+        return None
+    m = re.search(r'^\s*#\s+(.+)$', md, flags=re.M)
+    if not m:
+        return None
+    h1 = m.group(1)
+    # yyyy-mm-dd / yyyy/mm/dd / yyyy.mm.dd
+    m1 = re.search(r'(20\d{2})[./-](\d{1,2})[./-](\d{1,2})', h1)
+    if m1:
+        y, mm, dd = m1.group(1), m1.group(2), m1.group(3)
+        return y, f"{int(mm):02d}", f"{int(dd):02d}"
+    # yyyy年mm月dd日（dd 的“日”可选）
+    m2 = re.search(r'(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?', h1)
+    if m2:
+        y, mm, dd = m2.group(1), m2.group(2), m2.group(3)
+        return y, f"{int(mm):02d}", f"{int(dd):02d}"
+    return None
+
+
 # ===== 原子写文件 =====
 def atomic_write(path: str, data: str):
     dirpath = os.path.dirname(path) or "."
@@ -148,7 +175,11 @@ def atomic_write(path: str, data: str):
     with tempfile.NamedTemporaryFile('w', delete=False, encoding='utf-8', newline='\n', dir=dirpath) as tmp:
         tmp.write(data)
         tmp_path = tmp.name
-    shutil.move(tmp_path, path)
+    try:
+        # 原子替换，避免并发/覆盖问题
+        os.replace(tmp_path, path)
+    except Exception:
+        shutil.move(tmp_path, path)
 
 
 # ===== manifest 初始化 & 覆盖逻辑 =====
@@ -216,6 +247,13 @@ def process_dify_report(content: str):
 
     now_cn = datetime.now(CN_TZ)
     yyyy, mm, dd = now_cn.strftime("%Y"), now_cn.strftime("%m"), now_cn.strftime("%d")
+    # 优先使用 H1 标题中的日期
+    parsed = parse_date_from_h1(content)
+    if parsed:
+        yyyy, mm, dd = parsed
+        print(f"📅 使用 H1 日期命名：{yyyy}-{mm}-{dd}")
+    else:
+        print(f"📅 使用当天日期命名：{yyyy}-{mm}-{dd}")
     date_str = f"{yyyy}-{mm}-{dd}"
 
     if not os.path.isdir(GITHUB_REPO_PATH):
@@ -226,8 +264,10 @@ def process_dify_report(content: str):
     print(f"📁 仓库目录：{GITHUB_REPO_PATH}")
 
     md_rel = os.path.join(category, yyyy, mm, f"{dd}.md")
+    # 覆盖写入（同日同类名文件会被替换）
     atomic_write(os.path.join(PUBLIC_DIR, md_rel), content)
-    if WRITE_TO_ROOT: atomic_write(md_rel, content)
+    if WRITE_TO_ROOT:
+        atomic_write(md_rel, content)
     print(f"✅ Markdown 写入：{os.path.join(PUBLIC_DIR, md_rel)}" + (" & " + md_rel if WRITE_TO_ROOT else ""))
 
     manifest_root = os.path.join("manifest.json")

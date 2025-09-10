@@ -234,6 +234,16 @@ function asset(path: string): string {
     return path;
   }
 }
+// 附加构建版本参数，避免 CDN/浏览器缓存
+function withBuildTag(u: string): string {
+  try {
+    const id = (typeof window !== 'undefined' && (window as any).__NEXT_DATA__?.buildId) || '';
+    if (!id) return u;
+    return u + (u.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(id);
+  } catch {
+    return u;
+  }
+}
 function makeExcerpt(md: string): string {
   const lines = md.split('\n');
   for (const raw of lines) {
@@ -449,9 +459,9 @@ export default function ElegantDaily() {
   useEffect(() => {
     async function load() {
       try {
-        let res = await fetch('./manifest.json', { cache: 'no-store', signal: AbortController && new AbortController().signal });
+        let res = await fetch(withBuildTag('./manifest.json'), { cache: 'no-store', signal: AbortController && new AbortController().signal });
         if (!res.ok) {
-          try { res = await fetch(asset('/manifest.json'), { cache: 'no-store' }); } catch {}
+          try { res = await fetch(withBuildTag(asset('/manifest.json')), { cache: 'no-store' }); } catch {}
         }
         const raw = (await res.json()) as any;
         const m: Manifest = {
@@ -539,7 +549,8 @@ export default function ElegantDaily() {
           const key = `${p.date}-${p.title}`;
           if (summaryCache[key]) return;
           try {
-            const res = await fetch(p.url!, { cache: "no-store" });
+            const res = await fetch(withBuildTag(asset('/' + String(p.url).replace(/^\//,''))), { cache: "no-store" });
+            if (!res.ok) return; // 文件不存在时不要写入摘要
             const md = await res.text();
             const cleaned = stripLeadingTocAndIntro(stripFirstHeading(md, p.title));
             const normalized = normalizeMarkdown(stripFrontmatter(cleaned));
@@ -569,7 +580,7 @@ export default function ElegantDaily() {
     if (!md && p.url) {
       try {
         // p.url已经是相对路径 'ai/2024/01/01.md'，浏览器会自动处理
-        const res = await fetch(p.url, { cache: "no-store" });
+        const res = await fetch(asset('/' + String(p.url).replace(/^\//,'')), { cache: "no-store" });
         md = await res.text();
       } catch {
         md = "（加载 Markdown 失败）";
