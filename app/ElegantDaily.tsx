@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
@@ -14,7 +14,7 @@ import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import hljs from "highlight.js";
 
-// 放在 import 之后
+// 鏀惧湪 import 涔嬪悗
 function getTextFromChildren(children: any): string {
   if (typeof children === "string") return children;
   if (Array.isArray(children)) return children.map(getTextFromChildren).join("");
@@ -24,26 +24,23 @@ function getTextFromChildren(children: any): string {
   return "";
 }
 
-// 清理卡片摘要开头的“🎮 游戏行业速递 + 日期”前缀
+// 娓呯悊鍗＄墖鎽樿寮€澶寸殑鈥滒煄?娓告垙琛屼笟閫熼€?+ 鏃ユ湡鈥濆墠缂€
 function cleanSummary(input?: string): string | undefined {
   if (!input) return input;
   const s = String(input);
   const cleaned = s
-    // 去掉可选的手柄 emoji、空格、分隔符和日期，如：🎮 游戏行业速递 2025年09月09日
-    .replace(/^[\u{1F3AE}\s]*游戏行业速递\s*[-—:：]*\s*\d{4}年\d{2}月\d{2}日(?:\s*\([^\)]*\))?\s*/u, "")
+    // 鍘绘帀鍙€夌殑鎵嬫焺 emoji銆佺┖鏍笺€佸垎闅旂鍜屾棩鏈燂紝濡傦細馃幃 娓告垙琛屼笟閫熼€?2025骞?9鏈?9鏃?    .replace(/^[\u{1F3AE}\s]*娓告垙琛屼笟閫熼€抃s*[-鈥?锛歖*\s*\d{4}骞碶d{2}鏈圽d{2}鏃??:\s*\([^\)]*\))?\s*/u, "")
     .trimStart();
   return cleaned;
 }
 
 const mdComponents = {
-  // 隐藏分类/来源的引用块，因为我们会在 H2 中显示
-  blockquote: ({ children, ...rest }: any) => {
+  // 闅愯棌鍒嗙被/鏉ユ簮鐨勫紩鐢ㄥ潡锛屽洜涓烘垜浠細鍦?H2 涓樉绀?  blockquote: ({ children, ...rest }: any) => {
     const textContent = getTextFromChildren(children);
-    const isMetaBlock = textContent.includes('分类：') || textContent.includes('来源：');
+    const isMetaBlock = textContent.includes('鍒嗙被锛?) || textContent.includes('鏉ユ簮锛?);
 
     if (isMetaBlock) {
-      return null; // 隐藏 meta 引用块
-    }
+      return null; // 闅愯棌 meta 寮曠敤鍧?    }
 
     return (
       <blockquote
@@ -98,24 +95,21 @@ const mdComponents = {
     const text = getTextFromChildren(children);
     const id = slugify(text);
     
-    // 从原始 Markdown（未经过 parseMetaAndToc 处理的）中提取 meta 信息
+    // 浠庡師濮?Markdown锛堟湭缁忚繃 parseMetaAndToc 澶勭悊鐨勶級涓彁鍙?meta 淇℃伅
     const extractMetaForH2 = (h2Title: string) => {
       const rawMarkdown = (window as any).__rawMarkdown || '';
       if (!rawMarkdown) return null;
       
-      // 找到这个 H2 标题的位置
-      const titlePattern = `## ${h2Title}`;
+      // 鎵惧埌杩欎釜 H2 鏍囬鐨勪綅缃?      const titlePattern = `## ${h2Title}`;
       const titleIndex = rawMarkdown.indexOf(titlePattern);
       if (titleIndex === -1) return null;
       
-      // 从标题位置开始，找到下一个 ## 或文档结束
-      const nextH2Index = rawMarkdown.indexOf('\n## ', titleIndex + titlePattern.length);
+      // 浠庢爣棰樹綅缃紑濮嬶紝鎵惧埌涓嬩竴涓?## 鎴栨枃妗ｇ粨鏉?      const nextH2Index = rawMarkdown.indexOf('\n## ', titleIndex + titlePattern.length);
       const sectionEnd = nextH2Index === -1 ? rawMarkdown.length : nextH2Index;
       const section = rawMarkdown.slice(titleIndex, sectionEnd);
       
-      // 提取分类和来源
-      const categoryMatch = section.match(/>\s*\*\*分类：\*\*\s*([^\n\r]+)/);
-      const sourceMatch = section.match(/>\s*\*\*来源：\*\*\s*([^\n\r]+)/);
+      // 鎻愬彇鍒嗙被鍜屾潵婧?      const categoryMatch = section.match(/>\s*\*\*鍒嗙被锛歕*\*\s*([^\n\r]+)/);
+      const sourceMatch = section.match(/>\s*\*\*鏉ユ簮锛歕*\*\s*([^\n\r]+)/);
       
       const result: { category?: string; sources?: { label: string; href: string }[] } = {};
       
@@ -127,7 +121,7 @@ const mdComponents = {
         const sourceText = sourceMatch[1].trim();
         const sources: { label: string; href: string }[] = [];
         
-        // 解析链接格式 [文本](链接)
+        // 瑙ｆ瀽閾炬帴鏍煎紡 [鏂囨湰](閾炬帴)
         const linkMatches = [...sourceText.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
         linkMatches.forEach(match => {
           sources.push({ label: match[1], href: match[2] });
@@ -182,9 +176,9 @@ type Entry = {
   title: string;
   summary?: string;
   tags?: string[];
-  url?: string;            // 相对路径 md 文件，如 "game/2025/09/08.md"
-  content?: string;        // 也可直接内联 md
-  _md?: string;            // 运行期解析后的 md 文本
+  url?: string;            // 鐩稿璺緞 md 鏂囦欢锛屽 "game/2025/09/08.md"
+  content?: string;        // 涔熷彲鐩存帴鍐呰仈 md
+  _md?: string;            // 杩愯鏈熻В鏋愬悗鐨?md 鏂囨湰
   _meta?: {
     category?: string;
     sources?: { label: string; href: string }[];
@@ -211,8 +205,8 @@ function formatDate(iso?: string): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  const weekday = "日一二三四五六"[d.getDay()];
-  return `${y}-${m}-${dd}（周${weekday}）`;
+  const weekday = "鏃ヤ竴浜屼笁鍥涗簲鍏?[d.getDay()];
+  return `${y}-${m}-${dd}锛堝懆${weekday}锛塦;
 }
 function readingTime(md?: string): number {
   const words = String(md || "")
@@ -224,8 +218,7 @@ function readingTime(md?: string): number {
 function stripFrontmatter(md: string = ""): string {
   return md.replace(/^---[\s\S]*?---\n?/, "");
 }
-// 处理静态资源前缀（GitHub Pages basePath）
-function asset(path: string): string {
+// 澶勭悊闈欐€佽祫婧愬墠缂€锛圙itHub Pages basePath锛?function asset(path: string): string {
   try {
     const prefix = (typeof window !== 'undefined' && (window as any).__NEXT_DATA__?.assetPrefix) || '';
     const p = path.startsWith('/') ? path : '/' + path;
@@ -234,8 +227,7 @@ function asset(path: string): string {
     return path;
   }
 }
-// 附加构建版本参数，避免 CDN/浏览器缓存
-function withBuildTag(u: string): string {
+// 闄勫姞鏋勫缓鐗堟湰鍙傛暟锛岄伩鍏?CDN/娴忚鍣ㄧ紦瀛?function withBuildTag(u: string): string {
   try {
     const id = (typeof window !== 'undefined' && (window as any).__NEXT_DATA__?.buildId) || '';
     if (!id) return u;
@@ -266,15 +258,13 @@ function stripFirstHeading(md: string = "", title: string): string {
 
 function normalizeMarkdown(md: string = ""): string {
   return (md || "")
-    .replace(/\uFEFF/g, "")      // 去 BOM/零宽
-    .replace(/\r\n/g, "\n")      // 统一换行
-    // 引用后若下一行不是 '>' 或空行，补一行空行，避免 lazy continuation
+    .replace(/\uFEFF/g, "")      // 鍘?BOM/闆跺
+    .replace(/\r\n/g, "\n")      // 缁熶竴鎹㈣
+    // 寮曠敤鍚庤嫢涓嬩竴琛屼笉鏄?'>' 鎴栫┖琛岋紝琛ヤ竴琛岀┖琛岋紝閬垮厤 lazy continuation
     .replace(/(^>.*\n)(?!>|\n)/gm, "$1\n")
-    // 段落/标题/引用 之后若直接开始列表，则补空行，确保识别列表
-    .replace(/([^\n>])\n(- |\* |\d+[.)、] )/g, "$1\n\n$2")
-    // 将粗体提示转为小标题，提升可读性
-    .replace(/^\*\*核心洞察：\*\*\s*/gm, "## 核心洞察\n\n")
-    .replace(/^\*\*内容简介：\*\*\s*/gm, "## 内容简介\n\n");
+    // 娈佃惤/鏍囬/寮曠敤 涔嬪悗鑻ョ洿鎺ュ紑濮嬪垪琛紝鍒欒ˉ绌鸿锛岀‘淇濊瘑鍒垪琛?    .replace(/([^\n>])\n(- |\* |\d+[.)銆乚 )/g, "$1\n\n$2")
+    // 灏嗙矖浣撴彁绀鸿浆涓哄皬鏍囬锛屾彁鍗囧彲璇绘€?    .replace(/^\*\*鏍稿績娲炲療锛歕*\*\s*/gm, "## 鏍稿績娲炲療\n\n")
+    .replace(/^\*\*鍐呭绠€浠嬶細\*\*\s*/gm, "## 鍐呭绠€浠媆n\n");
 }
 
 function extractLinks(markdown: string): { label: string; href: string }[] {
@@ -304,27 +294,26 @@ function parseMetaAndToc(md: string): { md: string; meta: Entry["_meta"]; toc: E
   let out = md;
   const meta: Entry["_meta"] = { category: undefined, sources: [] };
 
-  // 提取分类
-  const catMatch = out.match(/^>\s*\*\*分类：\*\*\s*([^\n]+)$/m);
+  // 鎻愬彇鍒嗙被
+  const catMatch = out.match(/^>\s*\*\*鍒嗙被锛歕*\*\s*([^\n]+)$/m);
   if (catMatch) {
     meta.category = catMatch[1].trim();
     out = out.replace(catMatch[0] + "\n", "");
   }
-  // 提取来源（可能有多个链接，以顿号/逗号分隔）
-  const srcMatch = out.match(/^>\s*\*\*来源：\*\*\s*([^\n]+)$/m);
+  // 鎻愬彇鏉ユ簮锛堝彲鑳芥湁澶氫釜閾炬帴锛屼互椤垮彿/閫楀彿鍒嗛殧锛?  const srcMatch = out.match(/^>\s*\*\*鏉ユ簮锛歕*\*\s*([^\n]+)$/m);
   if (srcMatch) {
     meta.sources = extractLinks(srcMatch[1]);
     out = out.replace(srcMatch[0] + "\n", "");
   }
 
-  // 生成 TOC（H2，仅保留新闻标题，过滤“核心洞察/内容简介”，并去重、限量）
+  // 鐢熸垚 TOC锛圚2锛屼粎淇濈暀鏂伴椈鏍囬锛岃繃婊も€滄牳蹇冩礊瀵?鍐呭绠€浠嬧€濓紝骞跺幓閲嶃€侀檺閲忥級
   const toc: { id: string; text: string }[] = [];
   const seen = new Set<string>();
   out.split("\n").forEach((line) => {
     const m = /^##\s+(.+)$/.exec(line);
     if (!m) return;
     const text = m[1].trim();
-    if (text === "核心洞察" || text === "内容简介") return;
+    if (text === "鏍稿績娲炲療" || text === "鍐呭绠€浠?) return;
     let id = slugify(text);
     let idx = 1;
     while (seen.has(id)) {
@@ -338,29 +327,26 @@ function parseMetaAndToc(md: string): { md: string; meta: Entry["_meta"]; toc: E
 }
 
 function stripLeadingTocAndIntro(md: string): string {
-  // 只在确实存在"人工目录"时才移除（检测是否有连续的链接列表）
+  // 鍙湪纭疄瀛樺湪"浜哄伐鐩綍"鏃舵墠绉婚櫎锛堟娴嬫槸鍚︽湁杩炵画鐨勯摼鎺ュ垪琛級
   const lines = md.split('\n');
   let firstH2Index = -1;
   let hasLinkList = false;
   
-  // 找到第一个 H2 的位置
-  for (let i = 0; i < lines.length; i++) {
+  // 鎵惧埌绗竴涓?H2 鐨勪綅缃?  for (let i = 0; i < lines.length; i++) {
     if (lines[i].match(/^##\s+/)) {
       firstH2Index = i;
       break;
     }
   }
   
-  if (firstH2Index > 5) { // 只有当 H1 和第一个 H2 之间有足够内容时才检查
-    // 检查是否有连续的链接列表（人工目录的特征）
+  if (firstH2Index > 5) { // 鍙湁褰?H1 鍜岀涓€涓?H2 涔嬮棿鏈夎冻澶熷唴瀹规椂鎵嶆鏌?    // 妫€鏌ユ槸鍚︽湁杩炵画鐨勯摼鎺ュ垪琛紙浜哄伐鐩綍鐨勭壒寰侊級
     let linkCount = 0;
     for (let i = 1; i < firstH2Index; i++) {
-      if (lines[i].includes('](') && (lines[i].includes('《') || lines[i].includes('【'))) {
+      if (lines[i].includes('](') && (lines[i].includes('銆?) || lines[i].includes('銆?))) {
         linkCount++;
       }
     }
-    hasLinkList = linkCount >= 3; // 至少3个链接才认为是人工目录
-  }
+    hasLinkList = linkCount >= 3; // 鑷冲皯3涓摼鎺ユ墠璁や负鏄汉宸ョ洰褰?  }
   
   if (hasLinkList && firstH2Index > -1) {
     return lines.slice(firstH2Index).join('\n');
@@ -371,7 +357,7 @@ function stripLeadingTocAndIntro(md: string): string {
 /** ---------- Component ---------- */
 export default function ElegantDaily() {
   const [manifest, setManifest] = useState<Manifest>({
-    site: { title: "每日精选", description: "", baseUrl: "" },
+    site: { title: "姣忔棩绮鹃€?, description: "", baseUrl: "" },
     categories: { ai: "AI", game: "Game" },
     months: {},
   });
@@ -386,7 +372,7 @@ export default function ElegantDaily() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [summaryCache, setSummaryCache] = useState<Record<string, string>>({});
 
-  // 今日日期（本地时区）
+  // 浠婃棩鏃ユ湡锛堟湰鍦版椂鍖猴級
   const todayIso = useMemo(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -395,26 +381,23 @@ export default function ElegantDaily() {
     return `${y}-${m}-${d}`;
   }, []);
 
-  // 客户端挂载后初始化主题，避免 hydration 错误
+  // 瀹㈡埛绔寕杞藉悗鍒濆鍖栦富棰橈紝閬垮厤 hydration 閿欒
   useEffect(() => {
     setMounted(true);
-    // 从 DOM 读取实际的主题状态
-    const isDark = document.documentElement.classList.contains('dark');
+    // 浠?DOM 璇诲彇瀹為檯鐨勪富棰樼姸鎬?    const isDark = document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
   }, []);
 
-  // 主题切换并同步样式
-  useEffect(() => {
+  // 涓婚鍒囨崲骞跺悓姝ユ牱寮?  useEffect(() => {
     const root = document.documentElement;
-    // 只有当主题真的改变时才更新 DOM
+    // 鍙湁褰撲富棰樼湡鐨勬敼鍙樻椂鎵嶆洿鏂?DOM
     if (root.classList.contains('dark') !== (theme === 'dark')) {
       root.classList.toggle("dark", theme === "dark");
       root.style.colorScheme = theme;
     }
 
-    const base = ""; // 使用相对路径，兼容 dev 与 GitHub Pages 子路径
-
-    // 代码高亮主题
+    const base = ""; // 浣跨敤鐩稿璺緞锛屽吋瀹?dev 涓?GitHub Pages 瀛愯矾寰?
+    // 浠ｇ爜楂樹寒涓婚
     const hlId = "hljs-theme";
     let hlLink = document.getElementById(hlId) as HTMLLinkElement | null;
     if (!hlLink) {
@@ -425,7 +408,7 @@ export default function ElegantDaily() {
     }
     hlLink.href = `hljs/github${theme === "dark" ? "-dark" : ""}.css`;
 
-    // Markdown 样式
+    // Markdown 鏍峰紡
     const mdId = "md-theme";
     let mdLink = document.getElementById(mdId) as HTMLLinkElement | null;
     if (!mdLink) {
@@ -439,8 +422,7 @@ export default function ElegantDaily() {
     localStorage.setItem("theme", theme);
   }, [theme, manifest.site.baseUrl]);
 
-  // 监听抽屉内部滚动，控制返回顶部按钮显隐
-  useEffect(() => {
+  // 鐩戝惉鎶藉眽鍐呴儴婊氬姩锛屾帶鍒惰繑鍥為《閮ㄦ寜閽樉闅?  useEffect(() => {
     const el = detailScrollRef.current;
     if (!el) {
       setShowBackToTop(false);
@@ -448,15 +430,14 @@ export default function ElegantDaily() {
     }
     const onScroll = () => setShowBackToTop(el.scrollTop > 300);
     el.addEventListener('scroll', onScroll, { passive: true } as any);
-    // 初始计算
+    // 鍒濆璁＄畻
     onScroll();
     return () => {
       el.removeEventListener('scroll', onScroll as any);
     };
   }, [detail]);
 
-  // 拉取 manifest（优先根目录 ./manifest.json）
-  useEffect(() => {
+  // 鎷夊彇 manifest锛堜紭鍏堟牴鐩綍 ./manifest.json锛?  useEffect(() => {
     async function load() {
       try {
         let res = await fetch(withBuildTag('./manifest.json'), { cache: 'no-store', signal: AbortController && new AbortController().signal });
@@ -466,7 +447,7 @@ export default function ElegantDaily() {
         const raw = (await res.json()) as any;
         const m: Manifest = {
           site: {
-            title: raw.site?.title ?? raw.title ?? "每日精选",
+            title: raw.site?.title ?? raw.title ?? "姣忔棩绮鹃€?,
             description: raw.site?.description ?? raw.description ?? "",
             baseUrl: raw.site?.baseUrl ?? raw.baseUrl ?? "",
           },
@@ -474,31 +455,29 @@ export default function ElegantDaily() {
           months: raw.months || {},
         };
         setManifest(m);
-        // 默认选第一个有内容的分类+最近月份
-        const cats = Object.keys(m.months) as (keyof Manifest["months"])[];
+        // 榛樿閫夌涓€涓湁鍐呭鐨勫垎绫?鏈€杩戞湀浠?        const cats = Object.keys(m.months) as (keyof Manifest["months"])[];
         const pickCat = cats.find((c) => Object.keys(m.months[c] || {}).length > 0) || (cats[0] as any) || "game";
         setCat(pickCat);
         const months = Object.keys(m.months[pickCat] || {}).sort().reverse();
         setMonth(months[0] || "");
       } catch {
-        // 使用空结构兜底并提前返回，避免注入演示数据
-        setManifest({ site: { title: "", description: "", baseUrl: "" }, categories: { ai: "AI", game: "Game" }, months: { ai: {}, game: {} } });
+        // 浣跨敤绌虹粨鏋勫厹搴曞苟鎻愬墠杩斿洖锛岄伩鍏嶆敞鍏ユ紨绀烘暟鎹?        setManifest({ site: { title: "", description: "", baseUrl: "" }, categories: { ai: "AI", game: "Game" }, months: { ai: {}, game: {} } });
         setCat("game");
         setMonth("");
         return;
-        // 兜底：内置一些示例数据（如果 manifest 拉失败）
+        // 鍏滃簳锛氬唴缃竴浜涚ず渚嬫暟鎹紙濡傛灉 manifest 鎷夊け璐ワ級
         setManifest({
-          site: { title: "每日精选", description: "", baseUrl: "" },
+          site: { title: "姣忔棩绮鹃€?, description: "", baseUrl: "" },
           categories: { ai: "AI", game: "Game" },
           months: {
             ai: {
               "2025-08": [
                 {
                   date: "2025-08-31",
-                  title: "AI 日报 · 2025-08-31",
-                  summary: "月末观察：推理成本与评测基线。",
+                  title: "AI 鏃ユ姤 路 2025-08-31",
+                  summary: "鏈堟湯瑙傚療锛氭帹鐞嗘垚鏈笌璇勬祴鍩虹嚎銆?,
                   tags: ["AI"],
-                  content: "…",
+                  content: "鈥?,
                 },
               ],
             },
@@ -506,10 +485,10 @@ export default function ElegantDaily() {
               "2025-09": [
                 {
                   date: "2025-09-03",
-                  title: "游戏日报 · 2025-09-03",
-                  summary: "新品、买量、版本更新与节点观察。",
+                  title: "娓告垙鏃ユ姤 路 2025-09-03",
+                  summary: "鏂板搧銆佷拱閲忋€佺増鏈洿鏂颁笌鑺傜偣瑙傚療銆?,
                   tags: ["Game", "Daily"],
-                  content: "…",
+                  content: "鈥?,
                 },
               ],
             },
@@ -522,13 +501,13 @@ export default function ElegantDaily() {
     load();
   }, []);
 
-  // 月份列表
+  // 鏈堜唤鍒楄〃
   const months = useMemo(() => {
     const mm = Object.keys(manifest.months?.[cat] || {});
     return mm.sort().reverse();
   }, [manifest, cat]);
 
-  // 当前月份的条目（倒序，支持搜索）
+  // 褰撳墠鏈堜唤鐨勬潯鐩紙鍊掑簭锛屾敮鎸佹悳绱級
   const entries = useMemo(() => {
     const list = (manifest.months?.[cat]?.[month] || []).slice();
     list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
@@ -539,7 +518,7 @@ export default function ElegantDaily() {
     );
   }, [manifest, cat, month, query]);
 
-  // 懒加载摘要：若清单中缺失 summary，则抓取对应 Markdown 提取首段
+  // 鎳掑姞杞芥憳瑕侊細鑻ユ竻鍗曚腑缂哄け summary锛屽垯鎶撳彇瀵瑰簲 Markdown 鎻愬彇棣栨
   useEffect(() => {
     let aborted = false;
     async function loadExcerpts() {
@@ -550,7 +529,7 @@ export default function ElegantDaily() {
           if (summaryCache[key]) return;
           try {
             const res = await fetch(withBuildTag(asset('/' + String(p.url).replace(/^\//,''))), { cache: "no-store" });
-            if (!res.ok) return; // 文件不存在时不要写入摘要
+            if (!res.ok) return; // 鏂囦欢涓嶅瓨鍦ㄦ椂涓嶈鍐欏叆鎽樿
             const md = await res.text();
             const cleaned = stripLeadingTocAndIntro(stripFirstHeading(md, p.title));
             const normalized = normalizeMarkdown(stripFrontmatter(cleaned));
@@ -579,15 +558,14 @@ export default function ElegantDaily() {
     let md = p.content || "";
     if (!md && p.url) {
       try {
-        // p.url已经是相对路径 'ai/2024/01/01.md'，浏览器会自动处理
-        const res = await fetch(asset('/' + String(p.url).replace(/^\//,'')), { cache: "no-store" });
+        // p.url宸茬粡鏄浉瀵硅矾寰?'ai/2024/01/01.md'锛屾祻瑙堝櫒浼氳嚜鍔ㄥ鐞?        const res = await fetch(asset('/' + String(p.url).replace(/^\//,'')), { cache: "no-store" });
         md = await res.text();
       } catch {
-        md = "（加载 Markdown 失败）";
+        md = "锛堝姞杞?Markdown 澶辫触锛?;
       }
     }
     
-    // 保存原始 Markdown 供 H2 组件使用
+    // 淇濆瓨鍘熷 Markdown 渚?H2 缁勪欢浣跨敤
     (window as any).__rawMarkdown = md;
     
     const cleaned = stripLeadingTocAndIntro(stripFirstHeading(md, p.title));
@@ -615,9 +593,9 @@ export default function ElegantDaily() {
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
-  <title>${manifest.site.title} · ${curCatLabel} · ${month}</title>
+  <title>${manifest.site.title} 路 ${curCatLabel} 路 ${month}</title>
   <link>${location.href.split("#")[0]}</link>
-  <description>导出自 daily-site</description>
+  <description>瀵煎嚭鑷?daily-site</description>
   <lastBuildDate>${now}</lastBuildDate>
   ${items}
 </channel>
@@ -646,8 +624,8 @@ export default function ElegantDaily() {
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <div className="hidden text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300 sm:block">Daily • {manifest.categories?.[cat]}</div>
-              <div className="-mt-0.5 font-semibold">日报精选 · {formatDate(todayIso)}</div>
+              <div className="hidden text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300 sm:block">Daily 鈥?{manifest.categories?.[cat]}</div>
+              <div className="-mt-0.5 font-semibold">鏃ユ姤绮鹃€?路 {formatDate(todayIso)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -656,14 +634,14 @@ export default function ElegantDaily() {
               className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
             >
               {!mounted ? (
-                // 服务器端和客户端挂载前显示占位符，避免 hydration 错误
+                // 鏈嶅姟鍣ㄧ鍜屽鎴风鎸傝浇鍓嶆樉绀哄崰浣嶇锛岄伩鍏?hydration 閿欒
                 <div className="h-4 w-4" />
               ) : theme === "dark" ? (
                 <Sun className="h-4 w-4" />
               ) : (
                 <Moon className="h-4 w-4" />
               )}
-              <span className="hidden sm:inline">主题</span>
+              <span className="hidden sm:inline">涓婚</span>
             </button>
             <button onClick={exportRSS} className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
               <Rss className="h-4 w-4" /> <span className="hidden sm:inline">RSS</span>
@@ -726,9 +704,9 @@ export default function ElegantDaily() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-                placeholder="搜索标题/标签/摘要…"
+                placeholder="鎼滅储鏍囬/鏍囩/鎽樿鈥?
                 className="w-full rounded-2xl border border-slate-200 bg-white/80 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-500 shadow-inner outline-none ring-1 ring-transparent focus:border-slate-300 focus:ring-slate-200 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-white/20 dark:focus:ring-white/10"
-                aria-label="搜索文章"
+                aria-label="鎼滅储鏂囩珷"
                 role="searchbox"
             />
             </div>
@@ -771,8 +749,7 @@ export default function ElegantDaily() {
               exit={{ opacity: 0, y: -6 }}
               className="mt-6 grid place-items-center rounded-3xl border border-slate-200 bg-white/60 p-12 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
             >
-              本月暂无数据或被搜索过滤。
-            </motion.div>
+              鏈湀鏆傛棤鏁版嵁鎴栬鎼滅储杩囨护銆?            </motion.div>
           ) : (
             <motion.div
               key="grid"
@@ -797,8 +774,8 @@ export default function ElegantDaily() {
                   <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-500 sm:text-xs dark:text-slate-300/80">
                     <Calendar className="h-4 w-4" />
                     <span className="tabular-nums">{formatDate(p.date)}</span>
-                  <span>·</span>
-                    <span>{readingTime(p.content || p.summary) || 1} 分钟</span>
+                  <span>路</span>
+                    <span>{readingTime(p.content || p.summary) || 1} 鍒嗛挓</span>
                 </div>
 
                   <h3 className="line-clamp-1 text-base font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-lg">
@@ -816,7 +793,7 @@ export default function ElegantDaily() {
                       whileTap={{ scale: 0.98 }}
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 backdrop-blur hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/20"
                     >
-                      阅读全文 <ChevronRight className="h-4 w-4" />
+                      闃呰鍏ㄦ枃 <ChevronRight className="h-4 w-4" />
                     </motion.button>
                 </div>
                 </motion.article>
@@ -849,24 +826,24 @@ export default function ElegantDaily() {
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300/90">
                   <Calendar className="h-4 w-4" />
                   <span className="tabular-nums">{formatDate(detail.date)}</span>
-                  <span>· {readingTime(detail._md)} 分钟</span>
+                  <span>路 {readingTime(detail._md)} 鍒嗛挓</span>
                   </div>
                   <button
                     onClick={() => setDetail(null)}
                   className="rounded-xl border border-slate-200 bg-white/70 px-3 py-1.5 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                   >
-                    关闭
+                    鍏抽棴
                   </button>
                 </div>
               <div className="mx-auto w-full max-w-[1100px] px-6 py-8">
                 {/* H1 */}
                 <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{detail.title}</h1>
 
-                {/* meta row - 显示日报整体信息而非单条新闻信息 */}
+                {/* meta row - 鏄剧ず鏃ユ姤鏁翠綋淇℃伅鑰岄潪鍗曟潯鏂伴椈淇℃伅 */}
                 <div className="mb-4 flex flex-wrap items-center gap-2 detail-meta">
                   <span className="chip chip--meta">
                     <Newspaper className="h-3.5 w-3.5" /> 
-                    游戏行业日报
+                    娓告垙琛屼笟鏃ユ姤
                   </span>
                   <span className="chip chip--meta">
                     <Calendar className="h-3.5 w-3.5" /> 
@@ -874,15 +851,14 @@ export default function ElegantDaily() {
                   </span>
                   <span className="chip chip--meta">
                     <FileText className="h-3.5 w-3.5" /> 
-                    {detail._toc?.length || 0} 条资讯
-                  </span>
+                    {detail._toc?.length || 0} 鏉¤祫璁?                  </span>
                 </div>
 
                 {/* mini TOC */}
                 {Array.isArray(detail._toc) && detail._toc.length > 0 ? (
                   <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 mini-toc dark:border-white/10 dark:bg-white/5">
                     <h3 className="mb-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                      📋 本期内容 ({detail._toc.length} 条)
+                      馃搵 鏈湡鍐呭 ({detail._toc.length} 鏉?
                     </h3>
                     <div className="grid gap-2">
                       {detail._toc.map((item, idx) => (
@@ -903,7 +879,7 @@ export default function ElegantDaily() {
 
                 <article className="markdown-body p-2 sm:p-5">
                   <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={mdComponents}>
-                    {detail._md || "（暂无内容）"}
+                    {detail._md || "锛堟殏鏃犲唴瀹癸級"}
                   </ReactMarkdown>
                 </article>
 
@@ -916,12 +892,12 @@ export default function ElegantDaily() {
                     }}
                     className="rounded-lg border border-slate-200 bg-white/70 px-3 py-1.5 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                   >
-                    复制标题+链接
+                    澶嶅埗鏍囬+閾炬帴
                   </button>
                 </div>
               </div>
 
-              {/* 抽屉内悬浮返回顶部（随抽屉滚动视口固定） */}
+              {/* 鎶藉眽鍐呮偓娴繑鍥為《閮紙闅忔娊灞夋粴鍔ㄨ鍙ｅ浐瀹氾級 */}
               <AnimatePresence>
                 {showBackToTop && (
                   <div className="sticky bottom-5 z-20 flex w-full justify-end px-5 pointer-events-none">
@@ -931,10 +907,10 @@ export default function ElegantDaily() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 8 }}
                       onClick={() => detailScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-                      aria-label="返回顶部"
+                      aria-label="杩斿洖椤堕儴"
                       className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-md backdrop-blur hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/20"
                     >
-                      <ArrowUp className="h-4 w-4" /> 顶部
+                      <ArrowUp className="h-4 w-4" /> 椤堕儴
                     </motion.button>
                   </div>
                 )}
@@ -948,9 +924,7 @@ export default function ElegantDaily() {
       <footer className="border-t border-slate-200 px-4 py-8 text-center text-sm text-slate-600 dark:border-white/10 dark:text-slate-400">
         <div className="mx-auto max-w-6xl">
           <p>
-            本示例：<strong>React + Tailwind + Framer Motion</strong>（零后端）。
-            数据来自 <code>manifest.json</code> 或内置种子；条目可用 <code>url</code> 指向独立 Markdown 文件。
-          </p>
+            鏈ず渚嬶細<strong>React + Tailwind + Framer Motion</strong>锛堥浂鍚庣锛夈€?            鏁版嵁鏉ヨ嚜 <code>manifest.json</code> 鎴栧唴缃瀛愶紱鏉＄洰鍙敤 <code>url</code> 鎸囧悜鐙珛 Markdown 鏂囦欢銆?          </p>
         </div>
       </footer>
     </div>
