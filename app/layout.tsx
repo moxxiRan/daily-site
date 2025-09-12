@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import manifest from "../manifest.json";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "日报精选",
-  description: manifest.site.description,
+  description: "每天 10 分钟，跟上进展",
   keywords: ["AI", "游戏", "日报", "科技", "新闻"],
   authors: [{ name: "Daily Site" }],
 };

@@ -458,9 +458,9 @@ export default function ElegantDaily() {
   useEffect(() => {
     async function load() {
       try {
-        let res = await fetch(withBuildTag('./manifest.json'), { cache: 'no-store', signal: AbortController && new AbortController().signal });
+        let res = await fetch(withBuildTag(asset('/manifest.json')), { cache: 'no-store', signal: AbortController && new AbortController().signal });
         if (!res.ok) {
-          try { res = await fetch(withBuildTag(asset('/manifest.json')), { cache: 'no-store' }); } catch {}
+          try { res = await fetch(withBuildTag('./manifest.json'), { cache: 'no-store' }); } catch {}
         }
         const raw = (await res.json()) as any;
         const m: Manifest = {
