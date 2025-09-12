@@ -1094,7 +1094,15 @@ export default function ElegantDaily() {
                   )}
                   <div className="mt-3 flex items-center justify-end">
                     <motion.button
-                    onClick={() => openEntryInNewTab(p)}
+                      onClick={() => {
+                        // 移动端：直接打开抽屉
+                        if (window.innerWidth < 640) {
+                          openDetail(p);
+                        } else {
+                          // 桌面端：打开新标签页
+                          openEntryInNewTab(p);
+                        }
+                      }}
                       whileTap={{ scale: 0.98 }}
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 backdrop-blur hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/20"
                     >
@@ -1208,33 +1216,65 @@ export default function ElegantDaily() {
             </div>
           </div>
           
-          {/* Mobile: Inline content */}
-          <div className="sm:hidden">
-            <div className="mx-auto max-w-6xl px-4 py-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">{detail.title}</h1>
+          {/* Mobile: Drawer */}
+          <div className="sm:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setDetail(null)}>
+            <div 
+              className="absolute inset-0 bg-white dark:bg-slate-950 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/90">
+                  <Calendar className="h-4 w-4" />
+                  <span className="tabular-nums">{formatDate(detail.date)}</span>
+                </div>
                 <button
                   onClick={() => setDetail(null)}
                   className="rounded-xl border border-slate-200 bg-white/70 px-3 py-1.5 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#C0C0C0] dark:hover:bg-white/10"
                 >
-                  返回列表
+                  关闭
                 </button>
               </div>
-              <div className="mb-4 flex flex-wrap items-center gap-2 detail-meta">
-                <span className="chip chip--meta">
-                  <Newspaper className="h-3.5 w-3.5" /> 
-                  游戏行业日报
-                </span>
-                <span className="chip chip--meta">
-                  <Calendar className="h-3.5 w-3.5" /> 
-                  {formatDate(detail.date)}
-                </span>
+              <div 
+                ref={detailScrollRef}
+                className="overflow-y-auto h-[calc(100vh-60px)] px-2 py-4"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <h1 className="mb-3 text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">{detail.title}</h1>
+                <div className="mb-4 flex flex-wrap items-center gap-2 detail-meta">
+                  <span className="chip chip--meta">
+                    <Newspaper className="h-3.5 w-3.5" /> 
+                    游戏行业日报
+                  </span>
+                  <span className="chip chip--meta">
+                    <Calendar className="h-3.5 w-3.5" /> 
+                    {formatDate(detail.date)}
+                  </span>
+                </div>
+                {detail._md ? (
+                  <MobileNewsSectionList rawMd={rawMd} md={detail._md || ''} />
+                ) : (
+                  <p className="text-slate-500 dark:text-slate-400">暂无内容</p>
+                )}
               </div>
-              {detail._md ? (
-                <MobileNewsSectionList rawMd={rawMd} md={detail._md || ''} />
-              ) : (
-                <p className="text-slate-500 dark:text-slate-400">暂无内容</p>
-              )}
+              
+              {/* Mobile Back to Top Button */}
+              <AnimatePresence>
+                {showBackToTop && (
+                  <div className="absolute bottom-5 right-5 z-20">
+                    <motion.button
+                      key="mobile-back-to-top"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      onClick={() => detailScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                      aria-label="返回顶部"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-md backdrop-blur hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/20"
+                    >
+                      <ArrowUp className="h-4 w-4" /> 顶部
+                    </motion.button>
+                  </div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 

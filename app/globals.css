@@ -35,6 +35,11 @@
   .dark ::-webkit-scrollbar-thumb:hover {
     background: #64748b;
   }
+  
+  /* 隐藏移动端抽屉滚动条 */
+  .sm\\:hidden ::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ===== Components ===== */
