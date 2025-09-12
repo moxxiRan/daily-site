@@ -1107,39 +1107,32 @@ export default function ElegantDaily() {
         )}
         </AnimatePresence>
       </main>
-      {/* detail drawer */}
+      {/* detail page */}
       <AnimatePresence>
         {detail && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex bg-slate-950/60 p-0 sm:p-4 backdrop-blur-sm"
-            onClick={() => setDetail(null)}
+            className="fixed inset-0 z-40 bg-white dark:bg-slate-950"
           >
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              transition={{ type: "spring", damping: 24, stiffness: 260 }}
+            <div
               ref={detailScrollRef}
-              className="relative h-screen w-full overflow-y-auto scroll-smooth rounded-none border-0 bg-white shadow-none dark:bg-[#1E1E1E] sm:h-[92vh] sm:max-w-[1200px] sm:rounded-3xl sm:border sm:border-slate-200 sm:shadow-2xl sm:dark:border-white/10"
-              onClick={(e) => e.stopPropagation()}
+              className="relative h-screen w-full overflow-y-auto scroll-smooth"
             >
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/80 px-3 py-3 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 sm:px-5">
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/90">
                   <Calendar className="h-4 w-4" />
                   <span className="tabular-nums">{formatDate(detail.date)}</span>
-                  {/* 去掉阅读时长以缩窄宽度 */}
-                  </div>
-                  <button
-                    onClick={() => setDetail(null)}
-                  className="rounded-xl border border-slate-200 bg-white/70 px-3 py-1.5 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#C0C0C0] dark:hover:bg-white/10"
-                  >
-                    关闭
-                  </button>
                 </div>
-              <div className="w-full px-2 py-3 sm:mx-auto sm:max-w-[1100px] sm:px-6 sm:py-8">
+                <button
+                  onClick={() => setDetail(null)}
+                  className="rounded-xl border border-slate-200 bg-white/70 px-3 py-1.5 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#C0C0C0] dark:hover:bg-white/10"
+                >
+                  返回列表
+                </button>
+              </div>
+              <div className="w-full px-4 py-6 sm:mx-auto sm:max-w-4xl sm:px-8 sm:py-12">
                 {/* H1 */}
                 <h1 className="mb-3 whitespace-nowrap text-[20px] font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">{detail.title}</h1>
                 {/* meta row - 显示日报整体信息而非单条新闻信息 */}
@@ -1196,7 +1189,7 @@ export default function ElegantDaily() {
                 </article>
                 {/* footer actions (removed copy button as requested) */}
               </div>
-              {/* 抽屉内悬浮返回顶部（随抽屉滚动视口固定） */}
+              {/* 页面内悬浮返回顶部 */}
               <AnimatePresence>
                 {showBackToTop && (
                   <div className="sticky bottom-5 z-20 flex w-full justify-end px-5 pointer-events-none">
@@ -1214,7 +1207,7 @@ export default function ElegantDaily() {
                   </div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
