@@ -7,6 +7,33 @@
 @layer base {
   body {
     @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans;
+    overflow-x: hidden;
+  }
+  
+  /* 自定义滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
   }
 }
 
@@ -25,19 +52,44 @@
   }
 
   /* Markdown body */
-  /* 让中文正文占满容器，避免被“固定宽度”卡住 */
-  .markdown-body { @apply w-full max-w-none leading-relaxed text-[16px] md:text-[17px]; }
-  .dark .markdown-body { background-color: #1E1E1E; }
+  /* 让中文正文占满容器，避免被"固定宽度"卡住 */
+  .markdown-body { 
+    @apply w-full max-w-none leading-relaxed text-[16px] md:text-[17px]; 
+    overflow: visible;
+    height: auto;
+  }
+  .dark .markdown-body { 
+    background-color: transparent; 
+  }
 
-  .markdown-body h2 { @apply mt-10 mb-4 text-xl font-bold tracking-tight text-sky-700 scroll-mt-24; }
-  .dark .markdown-body h2 { color: #FFFFFF; }
+  .markdown-body h2 { 
+    @apply mt-8 mb-6 text-xl font-bold tracking-tight text-sky-700 scroll-mt-24; 
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+  }
+  .dark .markdown-body h2 { 
+    color: #FFFFFF; 
+    border-bottom-color: #334155;
+  }
   .markdown-body h2::before { content: ""; }
 
-  .markdown-body h3 { @apply mt-6 mb-2 text-lg font-semibold; }
-  .markdown-body p  { @apply my-4 leading-7; }
-  .markdown-body ul { @apply my-4 pl-6; }
+  .markdown-body h3 { @apply mt-6 mb-3 text-lg font-semibold text-slate-800; }
+  .dark .markdown-body h3 { color: #e2e8f0; }
+  
+  .markdown-body p { @apply my-4 leading-7 text-slate-700; }
+  .dark .markdown-body p { color: #cbd5e1; }
+  
+  .markdown-body ul { @apply my-4 pl-6 space-y-2; }
+  .markdown-body ul > li { @apply leading-6; }
   .markdown-body ul > li::marker { @apply text-sky-700; }
   .dark .markdown-body ul > li::marker { color: #557FFF; }
+  
+  .markdown-body a { 
+    @apply text-sky-600 hover:text-sky-800 underline decoration-sky-300 hover:decoration-sky-500;
+  }
+  .dark .markdown-body a { 
+    @apply text-sky-400 hover:text-sky-300 decoration-sky-600 hover:decoration-sky-400;
+  }
 }
 
 /* 详情页头部：隐藏第 3 个 meta chip（来源） */
@@ -67,7 +119,7 @@
   content: counter(toc, decimal) ".";
   display: inline-block;
 
-  /* 控制“数字区域”的宽度，保证多位数也齐；
+  /* 控制"数字区域"的宽度，保证多位数也齐；
      原来 1.6em 太宽了，改紧一些 */
   width: 1.1em;
 

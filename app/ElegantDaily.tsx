@@ -1046,7 +1046,7 @@ export default function ElegantDaily() {
         </motion.div>
       </section>
       {/* content */}
-      <main className="mx-auto max-w-6xl px-4 pb-10 pt-2 sm:pt-4">
+      <main className={`mx-auto max-w-6xl px-4 pb-10 pt-2 sm:pt-4 ${detail ? 'sm:hidden' : ''}`}>
         <AnimatePresence mode="popLayout">
         {entries.length === 0 ? (
             <motion.div
@@ -1108,18 +1108,14 @@ export default function ElegantDaily() {
         </AnimatePresence>
       </main>
       {/* detail page */}
-      <AnimatePresence>
-        {detail && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-white dark:bg-slate-950"
+      {detail && (
+        <>
+          {/* Desktop: Full page */}
+          <div className="hidden sm:block fixed inset-0 z-50 bg-white dark:bg-slate-950">
+          <div
+            ref={detailScrollRef}
+            className="relative h-full w-full overflow-y-auto overflow-x-hidden"
           >
-            <div
-              ref={detailScrollRef}
-              className="relative h-screen w-full overflow-y-auto scroll-smooth"
-            >
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/80 px-3 py-3 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 sm:px-5">
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/90">
                   <Calendar className="h-4 w-4" />
@@ -1132,7 +1128,7 @@ export default function ElegantDaily() {
                   返回列表
                 </button>
               </div>
-              <div className="w-full px-4 py-6 sm:mx-auto sm:max-w-4xl sm:px-8 sm:py-12">
+              <div className="w-full px-4 py-6 sm:mx-auto sm:max-w-5xl sm:px-8 sm:py-8">
                 {/* H1 */}
                 <h1 className="mb-3 whitespace-nowrap text-[20px] font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">{detail.title}</h1>
                 {/* meta row - 显示日报整体信息而非单条新闻信息 */}
@@ -1182,10 +1178,12 @@ export default function ElegantDaily() {
                     <MobileNewsSectionList rawMd={rawMd} md={detail._md || ''} />
                   ) : null}
                 </div>
-                <article className="markdown-body p-2 sm:p-5 hidden sm:block">
-                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={mdComponents}>
-                    {detail._md || "（暂无内容）"}
-                  </ReactMarkdown>
+                <article className="prose prose-slate dark:prose-invert max-w-none hidden sm:block markdown-body">
+                  <div className="px-2 sm:px-6 py-4">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={mdComponents}>
+                      {detail._md || "（暂无内容）"}
+                    </ReactMarkdown>
+                  </div>
                 </article>
                 {/* footer actions (removed copy button as requested) */}
               </div>
@@ -1208,9 +1206,40 @@ export default function ElegantDaily() {
                 )}
               </AnimatePresence>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+          
+          {/* Mobile: Inline content */}
+          <div className="sm:hidden">
+            <div className="mx-auto max-w-6xl px-4 py-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">{detail.title}</h1>
+                <button
+                  onClick={() => setDetail(null)}
+                  className="rounded-xl border border-slate-200 bg-white/70 px-3 py-1.5 text-sm hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#C0C0C0] dark:hover:bg-white/10"
+                >
+                  返回列表
+                </button>
+              </div>
+              <div className="mb-4 flex flex-wrap items-center gap-2 detail-meta">
+                <span className="chip chip--meta">
+                  <Newspaper className="h-3.5 w-3.5" /> 
+                  游戏行业日报
+                </span>
+                <span className="chip chip--meta">
+                  <Calendar className="h-3.5 w-3.5" /> 
+                  {formatDate(detail.date)}
+                </span>
+              </div>
+              {detail._md ? (
+                <MobileNewsSectionList rawMd={rawMd} md={detail._md || ''} />
+              ) : (
+                <p className="text-slate-500 dark:text-slate-400">暂无内容</p>
+              )}
+            </div>
+          </div>
+
+        </>
+      )}
       {/* footer */}
       <footer className="border-t border-slate-200 px-4 py-8 text-center text-sm text-slate-600 dark:border-white/10 dark:text-slate-400">
         <div className="mx-auto max-w-6xl">
