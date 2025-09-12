@@ -238,7 +238,15 @@ function stripFrontmatter(md: string = ""): string {
 // 处理静态资源前缀（GitHub Pages basePath）
 function asset(path: string): string {
   try {
-    const prefix = (typeof window !== 'undefined' && (window as any).__NEXT_DATA__?.assetPrefix) || '';
+    let prefix = '';
+    if (typeof window !== 'undefined') {
+      // 优先使用 __NEXT_DATA__.assetPrefix
+      prefix = (window as any).__NEXT_DATA__?.assetPrefix || '';
+      // 如果没有 assetPrefix，但在 GitHub Pages 环境下，使用 /daily-site
+      if (!prefix && window.location.hostname === 'moxxiran.github.io') {
+        prefix = '/daily-site';
+      }
+    }
     const p = path.startsWith('/') ? path : '/' + path;
     return (prefix ? prefix.replace(/\/$/, '') : '') + p;
   } catch {
