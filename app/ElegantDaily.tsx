@@ -6,8 +6,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Moon, Sun, Rss, Github, CalendarDays as Calendar,
-  Search, ChevronLeft, ChevronRight, Sparkles, Newspaper, Menu, X,
-  ExternalLink, Lightbulb, ArrowUp, FileText,
+  Search, ChevronLeft, ChevronRight, Sparkles, Newspaper,
+  ExternalLink, ArrowUp, FileText,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -385,8 +385,7 @@ export default function ElegantDaily() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [mounted, setMounted] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileCardMode] = useState(true);
+
   const [summaryCache, setSummaryCache] = useState<Record<string, string>>({});
   const [rawMd, setRawMd] = useState<string>("");
   const [tocOpen, setTocOpen] = useState(false);
@@ -417,7 +416,7 @@ export default function ElegantDaily() {
       root.classList.toggle("dark", theme === "dark");
       root.style.colorScheme = theme;
     }
-    const base = ""; // 使用相对路径，兼容 dev 与 GitHub Pages 子路径
+
     // 代码高亮主题
     const hlId = "hljs-theme";
     let hlLink = document.getElementById(hlId) as HTMLLinkElement | null;
@@ -599,7 +598,7 @@ export default function ElegantDaily() {
     return () => {
       aborted = true;
     };
-  }, [manifest, cat, month]);
+  }, [manifest, cat, month, summaryCache]);
   const curCatLabel = manifest.categories?.[cat] || cat;
   const monthScrollerRef = useRef<HTMLDivElement | null>(null);
   function scrollMonths(dir: number = 1) {
@@ -729,7 +728,7 @@ export default function ElegantDaily() {
       const t = raw.trim();
       if (!t.startsWith('>')) continue;
       // 去掉引文起始和装饰符
-      let s = t.replace(/^>\s*/, '').replace(/\*\*/g, '').trim();
+      const s = t.replace(/^>\s*/, '').replace(/\*\*/g, '').trim();
       // 若包含“分类”，截取“分类”之后所有字符作为值
       if (s.includes('分类') && category === undefined) {
         const idx = s.indexOf('分类');
@@ -886,7 +885,7 @@ export default function ElegantDaily() {
       </section>
     );
   }
-  function MobileNewsSectionList({ rawMd, md }: { rawMd: string; md: string }) {
+  function MobileNewsSectionList({ rawMd }: { rawMd: string; md: string }) {
     const rawSections = useMemo(() => splitByH2(rawMd || ''), [rawMd]);
     const docMeta = useMemo(() => parseDocMeta(rawMd || ''), [rawMd]);
     if (!rawSections.length) return null;
