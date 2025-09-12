@@ -1,58 +1,99 @@
+﻿@charset "UTF-8";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Base ===== */
 @layer base {
   body {
     @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans;
   }
 }
 
+/* ===== Components ===== */
 @layer components {
+  /* Chips */
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs leading-normal;
   }
   .chip--meta { 
-    @apply border-slate-300 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300; 
+    @apply border-slate-300 bg-slate-100 text-slate-600; 
   }
+  .dark .chip--meta { background: #3C3C3C; color: #FFFFFF; border-color: transparent; }
   .chip--link { 
     @apply border-teal-300 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/30 dark:bg-teal-400/10 dark:text-teal-300 dark:hover:bg-teal-400/20; 
   }
 
-  .markdown-body {
-    /* 填满抽屉内容区域，避免正文看起来只占一半 */
-    @apply w-full max-w-none leading-relaxed text-[16px] md:text-[17px];
-  }
-  .dark .markdown-body {
-    @apply text-slate-200;
-  }
-  .markdown-body h2 { @apply mt-10 mb-4 text-xl font-bold tracking-tight text-sky-300 scroll-mt-24; }
-  .markdown-body h3 { @apply mt-6 mb-2 text-lg font-semibold; }
-  .markdown-body p { @apply my-4 leading-7; }
-  .markdown-body ul { @apply my-4 pl-6; }
+  /* Markdown body */
+  /* 让中文正文占满容器，避免被“固定宽度”卡住 */
+  .markdown-body { @apply w-full max-w-none leading-relaxed text-[16px] md:text-[17px]; }
+  .dark .markdown-body { background-color: #1E1E1E; }
+
+  .markdown-body h2 { @apply mt-10 mb-4 text-xl font-bold tracking-tight text-sky-700 scroll-mt-24; }
+  .dark .markdown-body h2 { color: #FFFFFF; }
   .markdown-body h2::before { content: ""; }
-  .markdown-body h2 {
-    @apply mt-10 mb-4 text-xl font-bold text-sky-700 dark:text-sky-300;
-  }
-  .markdown-body ul > li::marker {
-    @apply text-sky-700 dark:text-sky-300;
-  }
+
+  .markdown-body h3 { @apply mt-6 mb-2 text-lg font-semibold; }
+  .markdown-body p  { @apply my-4 leading-7; }
+  .markdown-body ul { @apply my-4 pl-6; }
+  .markdown-body ul > li::marker { @apply text-sky-700; }
+  .dark .markdown-body ul > li::marker { color: #557FFF; }
 }
 
-/* 抽屉头部：隐藏第3个 meta 胶囊（“x 条资讯”） */
+/* 详情页头部：隐藏第 3 个 meta chip（来源） */
 .detail-meta .chip:nth-child(3) { display: none; }
 
-/* mini TOC 标题去掉计数，只保留文案 */
-.mini-toc h3 { position: relative; color: transparent; }
-.mini-toc h3::after {
-  content: "📋 本期内容";
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: #475569; /* slate-600 */
+/* ===== Mini TOC（修复标题乱码）===== */
+/* 不再隐藏真实文本；使用安全中文字体并关闭连字，避免被图标字体影响 */
+.mini-toc h3,
+.mini-toc h3 span {
+  font-family: "Noto Sans SC","PingFang SC","Microsoft YaHei",
+               system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif !important;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0, "clig" 0;
+  color: inherit !important;
+  position: static;
 }
-.dark .mini-toc h3::after { color: #cbd5e1; /* slate-300 */ }
+/* Mini TOC 序号 —— 紧凑版 */
+.mini-toc .grid { 
+  counter-reset: toc;
+}
+.mini-toc .grid a {
+  /* 覆盖 tailwind 的 gap-2，缩小序号与文本的间距 */
+  gap: 0.25rem !important; /* 约 4px，想更紧可改 0.125rem */
+}
+.mini-toc .grid a::before {
+  counter-increment: toc;
+  content: counter(toc, decimal) ".";
+  display: inline-block;
 
+  /* 控制“数字区域”的宽度，保证多位数也齐；
+     原来 1.6em 太宽了，改紧一些 */
+  width: 1.1em;
+
+  /* 交给 gap 控制间距，这里不要再额外加空隙 */
+  margin-right: 0;
+
+  opacity: .75;
+  font-variant-numeric: tabular-nums;
+  color: #64748b; /* slate-500 */
+}
+
+/* 两位数（10+）在更宽屏上给一点点富余 */
+@media (min-width: 640px) {
+  .mini-toc .grid a::before { width: 1.25em; }
+}
+
+
+/* 不要再隐藏并用 ::after 写死文案 */
+.mini-toc h3 { color: inherit !important; position: static; }
+.mini-toc h3::after { content: none !important; }
+
+/* 保留你原有的交互取舍 */
+.mini-toc button { display: none !important; }
+.mini-toc .grid   { display: grid !important; margin-top: 0.5rem; }
+
+/* 列表样式（确保 Markdown 列表符号正常） */
 .markdown-body ul {
   list-style: disc;
   padding-left: 1.5rem;
