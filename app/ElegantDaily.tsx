@@ -529,6 +529,25 @@ export default function ElegantDaily() {
     load();
   }, []);
 
+  // 在 manifest 就绪后，若 URL 显式指定了 cat（ai|game），优先采用该分类作为默认值（一次性）
+  useEffect(() => {
+    const hasData = Object.keys(manifest.months || {}).length > 0;
+    if (!hasData) return;
+    try {
+      const url = new URL(window.location.href);
+      const catParam = url.searchParams.get('cat') as keyof Manifest['months'] | null;
+      if (catParam && Object.prototype.hasOwnProperty.call(manifest.months, catParam)) {
+        // 仅在首次装载阶段根据 URL 设定分类，避免覆盖用户后续手动切换
+        setCat(catParam);
+        // 若该分类下存在月份，默认选中最近月份
+        const months = Object.keys(manifest.months[catParam] || {}).sort().reverse();
+        if (months[0]) setMonth(months[0]);
+      }
+    } catch {}
+    // 仅在 manifest 变为可用时运行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manifest]);
+
   // 根据 URL 参数（如 ?date=2025-09-10&cat=game）在加载完 manifest 后自动打开详情
   useEffect(() => {
     if (didOpenFromUrlRef.current) return;
