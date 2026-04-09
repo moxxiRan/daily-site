@@ -394,9 +394,13 @@ class WebhookHandler(http.server.SimpleHTTPRequestHandler):
             msg = json.dumps({"error": str(e), "preview": preview}, ensure_ascii=False).encode("utf-8")
             self.wfile.write(msg)
 
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
 if __name__ == "__main__":
     print(f"--- Dify Publisher (v15) ---  Using TZ: {TZ_LABEL}")
     print(f"Listening: http://127.0.0.1:{PORT}/webhook")
     print(f"Set Dify Webhook URL to: http://host.docker.internal:{PORT}/webhook")
-    with socketserver.TCPServer(("", PORT), WebhookHandler) as httpd:
+    with ReusableTCPServer(("", PORT), WebhookHandler) as httpd:
         httpd.serve_forever()
