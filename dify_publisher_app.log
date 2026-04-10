@@ -4,3 +4,20 @@
 [2026-04-10 11:21:57] 请求体预览: {"content": "hello test"}
 [2026-04-10 11:21:57] 处理 Dify 报告 (v16 格式化)...（TZ=ZoneInfo(Asia/Shanghai)）
 [2026-04-10 11:21:57] 内容校验未通过：内容过短（纯文本仅 9 字符，最少需要 100），疑似测试数据，跳过发布。
+[2026-04-10 11:22:14] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-10 11:22:14] Listening: http://127.0.0.1:9600/webhook
+[2026-04-10 11:22:14] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-10 11:22:36] 请求体预览: {"content": "hello test"}
+[2026-04-10 11:22:36] 处理 Dify 报告 (v16 格式化)...（TZ=ZoneInfo(Asia/Shanghai)）
+[2026-04-10 11:22:36] 127.0.0.1 - - [10/Apr/2026 11:22:36] "POST /webhook HTTP/1.1" 200 -
+[2026-04-10 11:22:36] 内容校验未通过：内容过短（纯文本仅 9 字符，最少需要 100），疑似测试数据，跳过发布。
+[2026-04-10 11:22:36] 请求体预览: {"content": "# \ud83e\udd16 AI\u884c\u4e1a\u901f\u9012 - 2026\u5e7404\u670809\u65e5\n\n## \u6d4b\u8bd5\u6807\u9898\uff1a\u8fd9\u662f\u4e00\u6bb5\u6a21\u62df\u6d4b\u8bd5\n\n> **\u5206\u7c7b\uff1a** \u6...
+[2026-04-10 11:22:36] 处理 Dify 报告 (v16 格式化)...（TZ=ZoneInfo(Asia/Shanghai)）
+[2026-04-10 11:22:36] 127.0.0.1 - - [10/Apr/2026 11:22:36] "POST /webhook HTTP/1.1" 200 -
+[2026-04-10 11:22:36] 分类：ai
+[2026-04-10 11:22:36] 使用 H1 日期命名：2026-04-09
+[2026-04-10 11:22:36] 仓库目录：C:\Users\arashiduan\daily-site
+[2026-04-10 11:22:36] Markdown 写入：public\ai\2026\04\09.md & ai\2026\04\09.md
+[2026-04-10 11:22:36] manifest.json 已更新（public + root）。
+[2026-04-10 11:22:36] Git 提交中 ...
+[2026-04-10 11:22:42] 推送完成。
