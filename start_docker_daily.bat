@@ -1,59 +1,67 @@
 @echo off
+chcp 65001 >NUL 2>&1
 setlocal enabledelayedexpansion
-:: 每天 9:30 由计划任务调用，确保 Docker Desktop 和 Dify 容器全部就绪
-:: 日志输出到同目录下 start_docker_daily.log
 set "LOGFILE=%~dp0start_docker_daily.log"
 
-call :log "========== 脚本启动 =========="
+call :log "========== Script Start =========="
 
-:: 1. 启动 Docker Desktop（如果没在运行）
 tasklist /FI "IMAGENAME eq Docker Desktop.exe" 2>NUL | find /I "Docker Desktop.exe" >NUL
 if errorlevel 1 (
-    call :log "Docker Desktop 未运行，正在启动..."
+    call :log "Docker Desktop not running, starting..."
     start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
 ) else (
-    call :log "Docker Desktop 已在运行。"
+    call :log "Docker Desktop already running."
 )
 
-:: 2. 等待 Docker Engine 就绪（最多等 120 秒）
-call :log "等待 Docker Engine 就绪..."
+call :log "Waiting for Docker Engine..."
 set /a count=0
 :wait_docker
 docker info >NUL 2>&1
 if errorlevel 1 (
     set /a count+=1
     if !count! GEQ 24 (
-        call :log "超时：Docker Engine 120 秒内未就绪，退出。"
+        call :log "TIMEOUT: Docker Engine not ready in 120s, exit."
         exit /b 1
     )
-    :: 用 ping 替代 timeout，避免在非交互式环境下报错
     ping -n 6 127.0.0.1 >NUL 2>&1
     goto wait_docker
 )
-call :log "Docker Engine 已就绪。"
+call :log "Docker Engine ready. Waiting 15s for Linux Engine pipe..."
+ping -n 16 127.0.0.1 >NUL 2>&1
 
-:: 3. 启动 Dify 容器
-call :log "启动 Dify 容器..."
-docker compose -f "F:\dify-docker\docker\docker-compose.yaml" up -d
+call :log "Starting Dify containers..."
+docker compose -f "F:\dify-docker\docker\docker-compose.yaml" up -d 2>&1
 if errorlevel 1 (
-    call :log "警告：Dify 容器启动失败！"
+    call :log "WARN: Dify failed, retry in 15s..."
+    ping -n 16 127.0.0.1 >NUL 2>&1
+    docker compose -f "F:\dify-docker\docker\docker-compose.yaml" up -d 2>&1
+    if errorlevel 1 (
+        call :log "ERROR: Dify containers failed after retry!"
+    ) else (
+        call :log "Dify containers started (retry)."
+    )
 ) else (
-    call :log "Dify 容器已启动。"
+    call :log "Dify containers started."
 )
 
-:: 4. 启动 n8n 容器
-call :log "启动 n8n 容器..."
-docker compose -f "F:\n8n-docker\docker-compose.yml" up -d
+call :log "Starting n8n containers..."
+docker compose -f "F:\n8n-docker\docker-compose.yml" up -d 2>&1
 if errorlevel 1 (
-    call :log "警告：n8n 容器启动失败！"
+    call :log "WARN: n8n failed, retry in 10s..."
+    ping -n 11 127.0.0.1 >NUL 2>&1
+    docker compose -f "F:\n8n-docker\docker-compose.yml" up -d 2>&1
+    if errorlevel 1 (
+        call :log "ERROR: n8n containers failed after retry!"
+    ) else (
+        call :log "n8n containers started (retry)."
+    )
 ) else (
-    call :log "n8n 容器已启动。"
+    call :log "n8n containers started."
 )
 
-:: 5. 启动 RSSHub（独立容器）
-call :log "启动 RSSHub..."
+call :log "Starting RSSHub..."
 docker start rsshub 2>NUL
-call :log "全部完成。"
+call :log "========== All Done =========="
 
 endlocal
 exit /b 0
