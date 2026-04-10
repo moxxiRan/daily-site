@@ -273,14 +273,39 @@ def git_commit_push(cwd: str, message: str):
     run_git(["git", "push", "origin", "main"], cwd)
 
 
+# ===== 内容校验：过滤测试/无效请求 =====
+MIN_CONTENT_LENGTH = 100  # 正式日报至少 100 字符
+
+def validate_content(content: str) -> Tuple[bool, str]:
+    """校验内容是否为有效日报，返回 (是否有效, 原因)"""
+    stripped = content.strip()
+    if not stripped:
+        return False, "内容为空"
+    # 去掉 Markdown 标记后的纯文本长度
+    plain = re.sub(r'[#>*_`~\-\[\]()!]+', '', stripped)
+    plain = re.sub(r'\s+', '', plain)
+    if len(plain) < MIN_CONTENT_LENGTH:
+        return False, f"内容过短（纯文本仅 {len(plain)} 字符，最少需要 {MIN_CONTENT_LENGTH}），疑似测试数据"
+    # 检查是否包含日报关键特征（至少一个 H2 标题）
+    if not re.search(r'^\s*##\s+', stripped, flags=re.M):
+        return False, "缺少二级标题（## ），不符合日报格式"
+    return True, "OK"
+
+
 # ===== 主处理逻辑 =====
 def process_dify_report(content: str):
     # ===== 在处理前先调用 v15 格式化函数 =====
     content = format_markdown_spacing(content)
-    
+
     print(f"🚀 处理 Dify 报告 (v15 格式化)...（TZ={TZ_LABEL}）")
     if not content or not content.strip():
         print("❌ 内容为空，忽略。")
+        return
+
+    # ===== 内容校验 =====
+    valid, reason = validate_content(content)
+    if not valid:
+        print(f"⚠️ 内容校验未通过：{reason}，跳过发布。")
         return
 
     category = classify(content)
