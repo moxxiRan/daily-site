@@ -1,0 +1,6 @@
+[2026-04-10 11:21:54] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-10 11:21:54] Listening: http://127.0.0.1:9600/webhook
+[2026-04-10 11:21:54] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-10 11:21:57] 请求体预览: {"content": "hello test"}
+[2026-04-10 11:21:57] 处理 Dify 报告 (v16 格式化)...（TZ=ZoneInfo(Asia/Shanghai)）
+[2026-04-10 11:21:57] 内容校验未通过：内容过短（纯文本仅 9 字符，最少需要 100），疑似测试数据，跳过发布。

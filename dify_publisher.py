@@ -1,4 +1,4 @@
-# dify_publisher.py (v15 - 强化的 Markdown 格式化，修复块级元素间距)
+# dify_publisher.py (v16 - 修复 pythonw 兼容性 + 内容校验)
 # 本地 HTTP 服务：接收 Dify Webhook，自动修正排版，归档到 GitHub Pages 仓库，并更新 manifest.json 后 push
 
 import http.server
@@ -10,7 +10,47 @@ from datetime import datetime, timezone, timedelta
 import tempfile
 import shutil
 import re
+import sys
+import logging
 from typing import Tuple, Optional
+
+# ===== pythonw 兼容性修复 =====
+# pythonw.exe 下 sys.stdout/sys.stderr 为 None，print() 和 HTTP 日志会崩溃
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_LOG_PATH = os.path.join(SCRIPT_DIR, "dify_publisher_app.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(_LOG_PATH, encoding="utf-8"),
+        # 仅在 stdout 可用时添加控制台输出（python.exe 下调试用）
+        *(
+            [logging.StreamHandler(sys.stdout)]
+            if sys.stdout is not None
+            else []
+        ),
+    ],
+)
+log = logging.getLogger("dify_publisher")
+
+# 把 print 重定向到 log，防止任何遗漏的 print 崩溃
+class _LogWriter:
+    def __init__(self, logger, level):
+        self._logger = logger
+        self._level = level
+        self._buf = ""
+    def write(self, msg):
+        if msg and msg.strip():
+            self._logger.log(self._level, msg.rstrip())
+    def flush(self):
+        pass
+
+if sys.stdout is None:
+    sys.stdout = _LogWriter(log, logging.INFO)
+if sys.stderr is None:
+    sys.stderr = _LogWriter(log, logging.ERROR)
 
 # ===== 用户需配置 =====
 GITHUB_REPO_PATH = r"C:\Users\arashiduan\daily-site"  # 本地仓库绝对路径
@@ -226,7 +266,7 @@ def atomic_write(path: str, data: str):
 # ===== manifest 初始化 & 覆盖逻辑 =====
 def load_or_init_manifest(manifest_path: str) -> dict:
     if not os.path.exists(manifest_path):
-        print(f"ℹ️ manifest.json 不存在于 {manifest_path}，将使用默认模板创建。")
+        log.info(f"manifest.json 不存在于 {manifest_path}，将使用默认模板创建。")
         return DEFAULT_MANIFEST.copy()
     try:
         with open(manifest_path, "r", encoding="utf-8") as f:
@@ -238,7 +278,7 @@ def load_or_init_manifest(manifest_path: str) -> dict:
         data["months"].setdefault("game", {})
         return data
     except Exception as e:
-        print(f"⚠️ 读取 manifest.json 失败 ({e})，将使用默认模板。")
+        log.warning(f"读取 manifest.json 失败 ({e})，将使用默认模板。")
         return DEFAULT_MANIFEST.copy()
 
 
@@ -267,7 +307,7 @@ def git_commit_push(cwd: str, message: str):
     run_git(["git", "add", "."], cwd)
     rs = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=cwd)
     if rs.returncode == 0:
-        print("ℹ️ 无文件变更，跳过提交。")
+        log.info("无文件变更，跳过提交。")
         return
     run_git(["git", "commit", "-m", message], cwd)
     run_git(["git", "push", "origin", "main"], cwd)
@@ -297,19 +337,19 @@ def process_dify_report(content: str):
     # ===== 在处理前先调用 v15 格式化函数 =====
     content = format_markdown_spacing(content)
 
-    print(f"🚀 处理 Dify 报告 (v15 格式化)...（TZ={TZ_LABEL}）")
+    log.info(f"处理 Dify 报告 (v16 格式化)...（TZ={TZ_LABEL}）")
     if not content or not content.strip():
-        print("❌ 内容为空，忽略。")
+        log.warning("内容为空，忽略。")
         return
 
     # ===== 内容校验 =====
     valid, reason = validate_content(content)
     if not valid:
-        print(f"⚠️ 内容校验未通过：{reason}，跳过发布。")
+        log.warning(f"内容校验未通过：{reason}，跳过发布。")
         return
 
     category = classify(content)
-    print(f"✅ 分类：{category}")
+    log.info(f"分类：{category}")
 
     now_cn = datetime.now(CN_TZ)
     yyyy, mm, dd = now_cn.strftime("%Y"), now_cn.strftime("%m"), now_cn.strftime("%d")
@@ -317,24 +357,24 @@ def process_dify_report(content: str):
     parsed = parse_date_any(content)
     if parsed:
         yyyy, mm, dd = parsed
-        print(f"📅 使用 H1 日期命名：{yyyy}-{mm}-{dd}")
+        log.info(f"使用 H1 日期命名：{yyyy}-{mm}-{dd}")
     else:
-        print(f"📅 使用当天日期命名：{yyyy}-{mm}-{dd}")
+        log.info(f"使用当天日期命名：{yyyy}-{mm}-{dd}")
     date_str = f"{yyyy}-{mm}-{dd}"
 
     if not os.path.isdir(GITHUB_REPO_PATH):
-        print(f"❌ 仓库目录不存在：{GITHUB_REPO_PATH}")
+        log.error(f"仓库目录不存在：{GITHUB_REPO_PATH}")
         return
 
     os.chdir(GITHUB_REPO_PATH)
-    print(f"📁 仓库目录：{GITHUB_REPO_PATH}")
+    log.info(f"仓库目录：{GITHUB_REPO_PATH}")
 
     md_rel = os.path.join(category, yyyy, mm, f"{dd}.md")
     # 覆盖写入（同日同类名文件会被替换）
     atomic_write(os.path.join(PUBLIC_DIR, md_rel), content)
     if WRITE_TO_ROOT:
         atomic_write(md_rel, content)
-    print(f"✅ Markdown 写入：{os.path.join(PUBLIC_DIR, md_rel)}" + (" & " + md_rel if WRITE_TO_ROOT else ""))
+    log.info(f"Markdown 写入：{os.path.join(PUBLIC_DIR, md_rel)}" + (" & " + md_rel if WRITE_TO_ROOT else ""))
 
     manifest_root = os.path.join("manifest.json")
     manifest_pub  = os.path.join(PUBLIC_DIR, "manifest.json")
@@ -347,15 +387,15 @@ def process_dify_report(content: str):
 
     atomic_write(manifest_pub, manifest_json)
     if WRITE_TO_ROOT: atomic_write(manifest_root, manifest_json)
-    print("✅ manifest.json 已更新（public" + (" + root" if WRITE_TO_ROOT else "") + "）。")
+    log.info("manifest.json 已更新（public" + (" + root" if WRITE_TO_ROOT else "") + "）。")
 
     commit_msg = f"docs(content): Update {category.upper()} daily report for {date_str}"
-    print("⏳ Git 提交中 ...")
+    log.info("Git 提交中 ...")
     try:
         git_commit_push(GITHUB_REPO_PATH, commit_msg)
-        print("🎉 推送完成。")
+        log.info("推送完成。")
     except subprocess.CalledProcessError as e:
-        print(f"❌ Git 失败：{e}")
+        log.error(f"Git 失败：{e}")
 
 
 # ===== Webhook Server (无变动) =====
@@ -384,7 +424,7 @@ class WebhookHandler(http.server.SimpleHTTPRequestHandler):
             body = raw.decode("utf-8", errors="replace").strip()
             try:
                 dbg = (body[:200] + '...') if len(body) > 200 else body
-                print(f"🔍 请求体预览: {dbg}")
+                log.info(f"请求体预览: {dbg}")
             except Exception: pass
             content = None; data = None
             try: data = json.loads(body)
@@ -424,8 +464,8 @@ class ReusableTCPServer(socketserver.TCPServer):
 
 
 if __name__ == "__main__":
-    print(f"--- Dify Publisher (v15) ---  Using TZ: {TZ_LABEL}")
-    print(f"Listening: http://127.0.0.1:{PORT}/webhook")
-    print(f"Set Dify Webhook URL to: http://host.docker.internal:{PORT}/webhook")
+    log.info(f"--- Dify Publisher (v16) ---  Using TZ: {TZ_LABEL}")
+    log.info(f"Listening: http://127.0.0.1:{PORT}/webhook")
+    log.info(f"Set Dify Webhook URL to: http://host.docker.internal:{PORT}/webhook")
     with ReusableTCPServer(("", PORT), WebhookHandler) as httpd:
         httpd.serve_forever()
