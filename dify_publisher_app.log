@@ -75,3 +75,9 @@
 [2026-04-10 11:28:57] 推送完成。
 [2026-04-10 11:28:57] 无文件变更，跳过提交。
 [2026-04-10 11:28:57] 推送完成。
+[2026-04-10 17:25:40] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-10 17:25:40] Listening: http://127.0.0.1:9600/webhook
+[2026-04-10 17:25:40] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-10 23:33:09] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-10 23:33:09] Listening: http://127.0.0.1:9600/webhook
+[2026-04-10 23:33:09] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook

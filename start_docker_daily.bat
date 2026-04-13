@@ -30,11 +30,11 @@ call :log "Docker Engine ready. Waiting 15s for Linux Engine pipe..."
 ping -n 16 127.0.0.1 >NUL 2>&1
 
 call :log "Starting Dify containers..."
-docker compose -f "F:\dify-docker\docker\docker-compose.yaml" up -d 2>&1
+docker compose -f "F:\dify-docker\docker\docker-compose.yaml" -f "F:\dify-docker\docker\docker-compose.override.yaml" up -d 2>&1
 if errorlevel 1 (
     call :log "WARN: Dify failed, retry in 15s..."
     ping -n 16 127.0.0.1 >NUL 2>&1
-    docker compose -f "F:\dify-docker\docker\docker-compose.yaml" up -d 2>&1
+    docker compose -f "F:\dify-docker\docker\docker-compose.yaml" -f "F:\dify-docker\docker\docker-compose.override.yaml" up -d 2>&1
     if errorlevel 1 (
         call :log "ERROR: Dify containers failed after retry!"
     ) else (
