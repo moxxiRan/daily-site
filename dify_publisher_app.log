@@ -254,3 +254,21 @@
 [2026-04-20 16:29:00] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
 [2026-04-20 16:29:00] Listening: http://127.0.0.1:9600/webhook
 [2026-04-20 16:29:00] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-20 17:27:42] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-20 17:27:42] Listening: http://127.0.0.1:9600/webhook
+[2026-04-20 17:27:42] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-20 18:20:47] 请求体预览: {"text": "# \ud83e\udd16 AI\u884c\u4e1a\u901f\u9012 - 2026\u5e7404\u670820\u65e5\n## Claude Opus 4.7\u53d1\u5e03\uff1a\u6280\u672f\u7a81\u7834\u4e0e\u4e89\u8bae\u5e76\u5b58\uff0cAnthropic\u7684\u5546\...
+[2026-04-20 18:20:47] 处理 Dify 报告 (v16 格式化)...（TZ=ZoneInfo(Asia/Shanghai)）
+[2026-04-20 18:20:47] 127.0.0.1 - - [20/Apr/2026 18:20:47] "POST /webhook HTTP/1.1" 200 -
+[2026-04-20 18:20:47] 分类：ai
+[2026-04-20 18:20:47] 使用 H1 日期命名：2026-04-20
+[2026-04-20 18:20:47] 仓库目录：C:\Users\arashiduan\daily-site
+[2026-04-20 18:20:47] Markdown 写入：public\ai\2026\04\20.md & ai\2026\04\20.md
+[2026-04-20 18:20:47] manifest.json 已更新（public + root）。
+[2026-04-20 18:20:47] Git 提交中 ...
+[2026-04-20 19:15:02] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-20 19:15:02] Listening: http://127.0.0.1:9600/webhook
+[2026-04-20 19:15:02] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-20 19:16:28] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-20 19:16:28] Listening: http://127.0.0.1:9600/webhook
+[2026-04-20 19:16:28] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
