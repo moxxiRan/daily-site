@@ -295,3 +295,15 @@
 [2026-04-21 13:15:30] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
 [2026-04-21 13:15:30] Listening: http://127.0.0.1:9600/webhook
 [2026-04-21 13:15:30] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-21 14:19:28] --- Dify Publisher (v16) ---  Using TZ: ZoneInfo(Asia/Shanghai)
+[2026-04-21 14:19:28] Listening: http://127.0.0.1:9600/webhook
+[2026-04-21 14:19:28] Set Dify Webhook URL to: http://host.docker.internal:9600/webhook
+[2026-04-22 10:51:55] 请求体预览: {"text": "# \ud83c\udfae \u6e38\u620f\u884c\u4e1a\u901f\u9012 - 2026\u5e7404\u670822\u65e5\n## \u51b0\u5ddd\u7f51\u7edc\uff1a\u4ece\u5de8\u4e8f2.5\u4ebf\u5230\u76c8\u52294.8\u4ebf\uff0c\u7cbe\u51c6\u4...
+[2026-04-22 10:51:55] 处理 Dify 报告 (v16 格式化)...（TZ=ZoneInfo(Asia/Shanghai)）
+[2026-04-22 10:51:55] 127.0.0.1 - - [22/Apr/2026 10:51:55] "POST /webhook HTTP/1.1" 200 -
+[2026-04-22 10:51:55] 分类：game
+[2026-04-22 10:51:55] 使用 H1 日期命名：2026-04-22
+[2026-04-22 10:51:55] 仓库目录：C:\Users\arashiduan\daily-site
+[2026-04-22 10:51:55] Markdown 写入：public\game\2026\04\22.md & game\2026\04\22.md
+[2026-04-22 10:51:55] manifest.json 已更新（public + root）。
+[2026-04-22 10:51:55] Git 提交中 ...
