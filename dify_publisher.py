@@ -296,21 +296,56 @@ def upsert_manifest(manifest: dict, category: str, yyyy: str, mm: str, dd: str, 
 
 
 # ===== Git 操作 =====
-def run_git(cmd, cwd):
+def run_git(cmd, cwd, timeout=180):
     try:
         subprocess.run(["git", "config", "--global", "--add", "safe.directory", cwd], check=False, cwd=cwd)
-    except Exception: pass
-    return subprocess.run(cmd, check=True, cwd=cwd)
+    except Exception:
+        pass
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    try:
+        result = subprocess.run(
+            cmd,
+            check=True,
+            cwd=cwd,
+            env=env,
+            timeout=timeout,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if result.stdout.strip():
+            log.info("Git stdout: " + result.stdout.strip())
+        if result.stderr.strip():
+            log.info("Git stderr: " + result.stderr.strip())
+        return result
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"Git command timed out after {timeout}s: {cmd}") from e
+    except subprocess.CalledProcessError as e:
+        stdout = (e.stdout or "").strip()
+        stderr = (e.stderr or "").strip()
+        if stdout:
+            log.error("Git stdout: " + stdout)
+        if stderr:
+            log.error("Git stderr: " + stderr)
+        raise
 
 
-def git_commit_push(cwd: str, message: str):
-    run_git(["git", "add", "."], cwd)
+def git_commit_push(cwd: str, message: str, paths):
+    unique_paths = []
+    for path in paths:
+        if path and path not in unique_paths:
+            unique_paths.append(path)
+    run_git(["git", "add", "--"] + unique_paths, cwd)
     rs = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=cwd)
     if rs.returncode == 0:
-        log.info("无文件变更，跳过提交。")
-        return
+        log.info("无文件变更，尝试推送未发布提交。")
+        run_git(["git", "push", "origin", "main"], cwd)
+        return False
     run_git(["git", "commit", "-m", message], cwd)
     run_git(["git", "push", "origin", "main"], cwd)
+    return True
 
 
 # ===== 内容校验：过滤测试/无效请求 =====
@@ -346,7 +381,7 @@ def process_dify_report(content: str):
     valid, reason = validate_content(content)
     if not valid:
         log.warning(f"内容校验未通过：{reason}，跳过发布。")
-        return
+        return {"status": "skipped", "reason": reason}
 
     category = classify(content)
     log.info(f"分类：{category}")
@@ -364,7 +399,7 @@ def process_dify_report(content: str):
 
     if not os.path.isdir(GITHUB_REPO_PATH):
         log.error(f"仓库目录不存在：{GITHUB_REPO_PATH}")
-        return
+        raise FileNotFoundError(f"仓库目录不存在：{GITHUB_REPO_PATH}")
 
     os.chdir(GITHUB_REPO_PATH)
     log.info(f"仓库目录：{GITHUB_REPO_PATH}")
@@ -391,11 +426,19 @@ def process_dify_report(content: str):
 
     commit_msg = f"docs(content): Update {category.upper()} daily report for {date_str}"
     log.info("Git 提交中 ...")
-    try:
-        git_commit_push(GITHUB_REPO_PATH, commit_msg)
-        log.info("推送完成。")
-    except subprocess.CalledProcessError as e:
-        log.error(f"Git 失败：{e}")
+    changed = git_commit_push(
+        GITHUB_REPO_PATH,
+        commit_msg,
+        [os.path.join(PUBLIC_DIR, md_rel), md_rel, manifest_pub, manifest_root],
+    )
+    log.info("推送完成。")
+    return {
+        "status": "published",
+        "category": category,
+        "date": date_str,
+        "path": md_rel.replace("\\", "/"),
+        "changed": changed,
+    }
 
 
 # ===== Webhook Server (无变动) =====
@@ -445,14 +488,22 @@ class WebhookHandler(http.server.SimpleHTTPRequestHandler):
             else: content = body
             if not content or not content.strip():
                 raise ValueError("未找到内容（content/text_input/text），或为空。")
-            from threading import Thread
-            Thread(target=process_dify_report, args=(content,), daemon=True).start()
+            result = process_dify_report(content)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            self.wfile.write(b'{"status":"ok"}')
-        except Exception as e:
+            msg = json.dumps(result, ensure_ascii=False).encode("utf-8")
+            self.wfile.write(msg)
+        except ValueError as e:
             self.send_response(400)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            preview = body[:200] if 'body' in locals() else ""
+            msg = json.dumps({"error": str(e), "preview": preview}, ensure_ascii=False).encode("utf-8")
+            self.wfile.write(msg)
+        except Exception as e:
+            log.exception("Webhook publish failed")
+            self.send_response(500)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             preview = body[:200] if 'body' in locals() else ""
