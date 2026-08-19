@@ -54,7 +54,7 @@ if sys.stderr is None:
 
 # ===== 用户需配置 =====
 GITHUB_REPO_PATH = r"C:\Users\arashiduan\daily-site"  # 本地仓库绝对路径
-PORT = 9600                                           # 监听端口
+PORT = 19600                                          # 监听端口
 PUBLIC_DIR = "public"                                 # public 目录名
 WRITE_TO_ROOT = True                                  # True: 同时写入仓库根目录与 public/
 
